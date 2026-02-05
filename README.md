@@ -55,14 +55,62 @@ cit suggest
 cit trend --days 30
 ```
 
+#### Multi-Device Sync Setup
+
+**First Computer (Initial Setup):**
+```bash
+# 1. Authenticate with GitHub CLI (if not already)
+gh auth login
+
+# 2. Initialize sync (auto-creates private repo)
+cit init-sync
+
+# 3. Collect all historical data
+cit collect --all
+
+# 4. Push to remote
+cit sync
+```
+
+**New Computer (Clone Existing Data):**
+```bash
+# 1. Authenticate with GitHub CLI
+gh auth login
+
+# 2. Clone your insights data
+cit clone https://github.com/your-username/claude-insights-data
+
+# 3. Keep syncing after each session
+cit sync
+```
+
+**Daily Workflow:**
+```bash
+# After each Claude Code session
+cit collect && cit sync
+```
+
 ### 📦 CLI Commands
+
+#### Data Collection & Analysis
 
 | Command | Description | Options |
 |---------|-------------|---------|
-| `cit collect` | Collect insights from `~/.claude/usage-data/facets/` | `--date YYYY-MM-DD` |
+| `cit collect` | Collect insights from `~/.claude/usage-data/facets/` | `--date YYYY-MM-DD`, `--all` |
 | `cit analyze` | Detect bottleneck patterns | `--days N`, `--output json` |
 | `cit suggest` | Generate CLAUDE.md improvements | `--category friction\|goal` |
 | `cit trend` | Show productivity trend charts | `--days N`, `--metric sessions\|time` |
+
+#### Multi-Device Sync
+
+| Command | Description | Options |
+|---------|-------------|---------|
+| `cit init-sync` | Initialize sync with auto-created private GitHub repo | `--name <repo-name>` |
+| `cit clone <url>` | Clone insights data to a new computer | - |
+| `cit sync` | Sync data across devices (commit + pull + push) | - |
+| `cit pull` | Pull latest data from remote | - |
+| `cit push` | Push local data to remote | - |
+| `cit remote add <url>` | Manually add remote repository | - |
 
 ### 📊 Example Output
 
@@ -172,14 +220,62 @@ cit suggest
 cit trend --days 30
 ```
 
+#### 멀티 디바이스 동기화 설정
+
+**첫 번째 컴퓨터 (초기 설정):**
+```bash
+# 1. GitHub CLI 인증 (아직 안 했다면)
+gh auth login
+
+# 2. 동기화 초기화 (자동으로 비공개 저장소 생성)
+cit init-sync
+
+# 3. 모든 히스토리 데이터 수집
+cit collect --all
+
+# 4. 원격에 푸시
+cit sync
+```
+
+**새 컴퓨터 (기존 데이터 복제):**
+```bash
+# 1. GitHub CLI 인증
+gh auth login
+
+# 2. 인사이트 데이터 복제
+cit clone https://github.com/your-username/claude-insights-data
+
+# 3. 세션 후 계속 동기화
+cit sync
+```
+
+**일일 워크플로우:**
+```bash
+# 각 Claude Code 세션 후
+cit collect && cit sync
+```
+
 ### 📦 CLI 명령어
+
+#### 데이터 수집 & 분석
 
 | 명령어 | 설명 | 옵션 |
 |-------|------|------|
-| `cit collect` | `~/.claude/usage-data/facets/`에서 인사이트 수집 | `--date YYYY-MM-DD` |
+| `cit collect` | `~/.claude/usage-data/facets/`에서 인사이트 수집 | `--date YYYY-MM-DD`, `--all` |
 | `cit analyze` | 병목 지점 패턴 감지 | `--days N`, `--output json` |
 | `cit suggest` | CLAUDE.md 개선 사항 생성 | `--category friction\|goal` |
 | `cit trend` | 생산성 트렌드 차트 표시 | `--days N`, `--metric sessions\|time` |
+
+#### 멀티 디바이스 동기화
+
+| 명령어 | 설명 | 옵션 |
+|-------|------|------|
+| `cit init-sync` | 자동으로 비공개 GitHub 저장소 생성 및 동기화 초기화 | `--name <repo-name>` |
+| `cit clone <url>` | 새 컴퓨터에 인사이트 데이터 복제 | - |
+| `cit sync` | 디바이스 간 데이터 동기화 (commit + pull + push) | - |
+| `cit pull` | 원격에서 최신 데이터 가져오기 | - |
+| `cit push` | 로컬 데이터를 원격에 푸시 | - |
+| `cit remote add <url>` | 수동으로 원격 저장소 추가 | - |
 
 ### 📊 출력 예시
 

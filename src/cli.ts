@@ -504,5 +504,85 @@ remoteCmd
     }
   });
 
+/**
+ * Init-sync command - Initialize sync with auto-created private repo
+ */
+program
+  .command('init-sync')
+  .description('Initialize sync by creating a private GitHub repo')
+  .option('-n, --name <repo-name>', 'Repository name', 'claude-insights-data')
+  .action(async (options) => {
+    const spinner = ora('Initializing sync...').start();
+
+    // Import dynamically to get new functions
+    const { initSync } = await import('./commands/sync');
+
+    try {
+      const result = await initSync(options.name);
+
+      if (result.success) {
+        spinner.succeed(chalk.green('Sync initialized successfully!'));
+        console.log(chalk.blue('\nSetup Summary:'));
+        result.steps.forEach(step => console.log(`  ${step}`));
+        console.log(chalk.bold(`\n📦 Repository: ${result.repoUrl}`));
+        console.log(chalk.blue('\nNext steps:'));
+        console.log('  • Run: cit collect --all  (gather all historical data)');
+        console.log('  • Run: cit sync           (sync after each session)');
+        console.log(chalk.gray('\nOn a new computer:'));
+        console.log(`  • Run: cit clone ${result.repoUrl}`);
+      } else {
+        spinner.fail(chalk.red('Init failed'));
+        console.error(chalk.red(`Error: ${result.error}`));
+        if (result.steps.length > 0) {
+          console.log(chalk.blue('\nCompleted steps:'));
+          result.steps.forEach(step => console.log(`  ${step}`));
+        }
+        process.exit(1);
+      }
+    } catch (error) {
+      spinner.fail(chalk.red('Init failed'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
+/**
+ * Clone command - Clone insights data on a new computer
+ */
+program
+  .command('clone <repo-url>')
+  .description('Clone insights data from GitHub to a new computer')
+  .action(async (repoUrl: string) => {
+    const spinner = ora('Cloning insights data...').start();
+
+    // Import dynamically
+    const { cloneInsights } = await import('./commands/sync');
+
+    try {
+      const result = await cloneInsights(repoUrl);
+
+      if (result.success) {
+        spinner.succeed(chalk.green('Clone complete!'));
+        console.log(chalk.blue('\nInsights data restored to: ~/claude-insights/'));
+        console.log(chalk.blue('\nNext steps:'));
+        console.log('  • Run: cit status         (verify data)');
+        console.log('  • Run: cit dashboard      (view dashboard)');
+        console.log('  • Run: cit sync           (keep in sync)');
+      } else {
+        spinner.fail(chalk.red('Clone failed'));
+        console.error(chalk.red(`Error: ${result.error}`));
+        process.exit(1);
+      }
+    } catch (error) {
+      spinner.fail(chalk.red('Clone failed'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
 // Parse CLI arguments
 program.parse();
