@@ -8,6 +8,7 @@
  * - analyze: Detect bottleneck patterns
  * - suggest: Generate CLAUDE.md improvements
  * - trend: Show productivity trends
+ * - compare: Compare insights between two dates
  */
 
 import { Command } from 'commander';
@@ -20,6 +21,7 @@ import { collectFacets, loadStoredData, getAvailableDates } from './collectors/f
 // Import analyzers
 import { analyzeBottlenecks, getHighSeveritySessions } from './analyzers/bottleneck';
 import { analyzeTrends, formatTrendChart } from './analyzers/trends';
+import { compareInsights, formatCompareResult } from './analyzers/compare';
 
 // Import generators
 import { generateClaudeMdSuggestions, formatSuggestionsAsMarkdown, generateSuggestionSummary } from './generators/claude-md';
@@ -326,6 +328,36 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Failed to access reports'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
+/**
+ * Compare command - Compare insights between two dates
+ */
+program
+  .command('compare')
+  .description('Compare insights between two dates')
+  .requiredOption('-d1, --date1 <YYYY-MM-DD>', 'First date to compare')
+  .requiredOption('-d2, --date2 <YYYY-MM-DD>', 'Second date to compare')
+  .option('-o, --output <format>', 'Output format (text|json)', 'text')
+  .action(async (options) => {
+    const spinner = ora('Comparing insights...').start();
+
+    try {
+      const result = await compareInsights(options.date1, options.date2);
+      spinner.succeed(chalk.green('Comparison complete'));
+
+      if (options.output === 'json') {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log(formatCompareResult(result));
+      }
+    } catch (error) {
+      spinner.fail(chalk.red('Comparison failed'));
       if (error instanceof Error) {
         console.error(chalk.red(`Error: ${error.message}`));
       }
