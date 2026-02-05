@@ -23,6 +23,9 @@ import { analyzeBottlenecks, getHighSeveritySessions } from './analyzers/bottlen
 import { analyzeTrends, formatTrendChart } from './analyzers/trends';
 import { compareInsights, formatCompareResult } from './analyzers/compare';
 
+// Import sync commands
+import { sync, pull, push, addRemote, removeRemote, listRemotes, getDeviceId } from './commands/sync';
+
 // Import generators
 import { generateClaudeMdSuggestions, formatSuggestionsAsMarkdown, generateSuggestionSummary } from './generators/claude-md';
 
@@ -361,6 +364,142 @@ program
       if (error instanceof Error) {
         console.error(chalk.red(`Error: ${error.message}`));
       }
+      process.exit(1);
+    }
+  });
+
+/**
+ * Sync command - Sync insights data across devices via Git
+ */
+program
+  .command('sync')
+  .description('Sync insights data across devices (commit + pull + push)')
+  .action(async () => {
+    const spinner = ora('Syncing insights data...').start();
+
+    try {
+      const result = await sync();
+
+      if (result.error) {
+        spinner.fail(chalk.red('Sync failed'));
+        console.error(chalk.red(result.error));
+        process.exit(1);
+      }
+
+      spinner.succeed(chalk.green('Sync complete'));
+      console.log(chalk.blue('\nSync Summary:'));
+      console.log(`  • Device: ${chalk.bold(getDeviceId())}`);
+      console.log(`  • Committed: ${result.committed ? chalk.green('yes') : 'no changes'}`);
+      console.log(`  • Pulled: ${result.pulled ? chalk.green('yes') : 'no'}`);
+      console.log(`  • Pushed: ${result.pushed ? chalk.green('yes') : 'no'}`);
+    } catch (error) {
+      spinner.fail(chalk.red('Sync failed'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
+/**
+ * Pull command - Download data from remote
+ */
+program
+  .command('pull')
+  .description('Pull insights data from remote repository')
+  .action(async () => {
+    const spinner = ora('Pulling from remote...').start();
+
+    try {
+      const result = await pull();
+      if (result.success) {
+        spinner.succeed(chalk.green('Pull complete'));
+      } else {
+        spinner.fail(chalk.red('Pull failed: ' + result.error));
+        process.exit(1);
+      }
+    } catch (error) {
+      spinner.fail(chalk.red('Pull failed'));
+      process.exit(1);
+    }
+  });
+
+/**
+ * Push command - Upload data to remote
+ */
+program
+  .command('push')
+  .description('Push insights data to remote repository')
+  .action(async () => {
+    const spinner = ora('Pushing to remote...').start();
+
+    try {
+      const result = await push();
+      if (result.success) {
+        spinner.succeed(chalk.green('Push complete'));
+      } else {
+        spinner.fail(chalk.red('Push failed: ' + result.error));
+        process.exit(1);
+      }
+    } catch (error) {
+      spinner.fail(chalk.red('Push failed'));
+      process.exit(1);
+    }
+  });
+
+/**
+ * Remote command - Manage remote repository
+ */
+const remoteCmd = program
+  .command('remote')
+  .description('Manage remote repository for sync');
+
+remoteCmd
+  .command('add <url>')
+  .description('Add or update remote repository URL')
+  .action(async (url: string) => {
+    try {
+      await addRemote(url);
+      console.log(chalk.green(`✅ Remote set to: ${url}`));
+      console.log(chalk.blue('\nNext steps:'));
+      console.log('  1. Run: cit sync');
+      console.log('  2. On other devices: git clone <url> ~/claude-insights && cit sync');
+    } catch (error) {
+      console.error(chalk.red('Failed to add remote'));
+      process.exit(1);
+    }
+  });
+
+remoteCmd
+  .command('remove')
+  .description('Remove remote repository')
+  .action(async () => {
+    try {
+      await removeRemote();
+      console.log(chalk.green('✅ Remote removed'));
+    } catch (error) {
+      console.error(chalk.red('Failed to remove remote'));
+      process.exit(1);
+    }
+  });
+
+remoteCmd
+  .command('list')
+  .description('List configured remotes')
+  .action(async () => {
+    try {
+      const remotes = await listRemotes();
+      if (remotes.length === 0) {
+        console.log(chalk.yellow('No remotes configured.'));
+        console.log(chalk.blue('Add one with: cit remote add <github-url>'));
+      } else {
+        console.log(chalk.bold('\n🔗 Configured Remotes'));
+        remotes.forEach(r => {
+          console.log(`  ${r.name}: ${r.url}`);
+        });
+      }
+    } catch (error) {
+      console.error(chalk.red('Failed to list remotes'));
       process.exit(1);
     }
   });
