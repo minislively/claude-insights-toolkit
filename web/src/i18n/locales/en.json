@@ -1,0 +1,110 @@
+{
+  "nav": {
+    "overview": "Overview",
+    "sessions": "Sessions",
+    "bottlenecks": "Bottlenecks",
+    "trends": "Trends",
+    "reports": "Reports"
+  },
+  "common": {
+    "dashboard": "Dashboard",
+    "loading": "Loading data...",
+    "error": "Error",
+    "retry": "Retry",
+    "noData": "No Data",
+    "noDataDesc": "No data available",
+    "runCollect": "Run cit collect --all to gather insights data",
+    "sessions": "sessions",
+    "days": "days",
+    "page": "Page",
+    "of": "of",
+    "prev": "Prev",
+    "next": "Next"
+  },
+  "period": {
+    "7d": "7d",
+    "14d": "14d",
+    "30d": "30d"
+  },
+  "metrics": {
+    "totalSessions": "Total Sessions",
+    "successRate": "Success Rate",
+    "apiBlocked": "API Blocked",
+    "wrongApproach": "Wrong Approach",
+    "contextOverflow": "Context Overflow",
+    "fullyMostly": "Fully + Mostly Achieved",
+    "sessionsWithApiErrors": "Sessions with API errors",
+    "requiredRework": "Required rework"
+  },
+  "overview": {
+    "title": "Overview",
+    "sessionsAcross": "{{count}} sessions across {{days}} days",
+    "dailySessions": "Daily Sessions",
+    "outcomes": "Outcomes",
+    "frictionPoints": "Friction Points",
+    "recentSessions": "Recent Sessions",
+    "id": "ID",
+    "goal": "Goal",
+    "outcome": "Outcome",
+    "type": "Type"
+  },
+  "sessions": {
+    "title": "Sessions",
+    "searchPlaceholder": "Search goals...",
+    "allOutcomes": "All Outcomes",
+    "helpfulness": "Helpfulness",
+    "friction": "Friction",
+    "summary": "Summary",
+    "frictionDetail": "Friction"
+  },
+  "bottlenecks": {
+    "title": "Bottlenecks",
+    "subtitle": "Friction patterns and recommendations",
+    "detectedPatterns": "Detected Patterns",
+    "noPatterns": "No significant bottleneck patterns detected. Keep up the good work!",
+    "recommendations": "Recommendations",
+    "sessionsAffected": "sessions affected",
+    "ofTotal": "of total"
+  },
+  "trends": {
+    "title": "Trends",
+    "dateRange": "{{start}} to {{end}}",
+    "keyInsights": "Key Insights",
+    "dailySessions": "Daily Sessions",
+    "successRate": "Success Rate",
+    "apiBlockedRate": "API Blocked Rate",
+    "usingMore": "You're using Claude Code more frequently",
+    "usingLess": "Claude Code usage is declining",
+    "usageStable": "Claude Code usage is consistent",
+    "successImproving": "🎉 Success rate is improving!",
+    "successDeclining": "⚠️ Success rate is declining - review bottlenecks",
+    "successStable": "Success rate is stable",
+    "apiDecreasing": "✅ API errors are decreasing",
+    "apiIncreasing": "🔴 API errors are increasing - infrastructure may be unstable",
+    "apiStable": "API error rate is stable"
+  },
+  "outcomes": {
+    "fully_achieved": "Fully Achieved",
+    "mostly_achieved": "Mostly Achieved",
+    "partially_achieved": "Partially",
+    "not_achieved": "Not Achieved",
+    "unclear_from_transcript": "Unclear",
+    "fully": "Fully",
+    "mostly": "Mostly",
+    "partial": "Partial",
+    "failed": "Failed"
+  },
+  "severity": {
+    "critical": "CRITICAL",
+    "high": "HIGH",
+    "medium": "MEDIUM",
+    "low": "LOW"
+  },
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Official Claude Code insights",
+    "noReports": "No reports available. Run cit collect to generate reports.",
+    "loadingReport": "Loading report...",
+    "selectReport": "Select a report to view"
+  }
+}

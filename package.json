@@ -13,7 +13,8 @@
     "lint": "eslint src/",
     "collect": "ts-node src/cli.ts collect",
     "analyze": "ts-node src/cli.ts analyze",
-    "suggest": "ts-node src/cli.ts suggest"
+    "suggest": "ts-node src/cli.ts suggest",
+    "dashboard": "cd web && npm run dev"
   },
   "keywords": [
     "claude-code",

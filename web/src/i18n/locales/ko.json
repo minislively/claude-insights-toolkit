@@ -1,0 +1,110 @@
+{
+  "nav": {
+    "overview": "개요",
+    "sessions": "세션",
+    "bottlenecks": "병목점",
+    "trends": "트렌드",
+    "reports": "리포트"
+  },
+  "common": {
+    "dashboard": "대시보드",
+    "loading": "데이터 로딩 중...",
+    "error": "오류",
+    "retry": "다시 시도",
+    "noData": "데이터 없음",
+    "noDataDesc": "사용 가능한 데이터가 없습니다",
+    "runCollect": "cit collect --all 명령으로 인사이트 데이터를 수집하세요",
+    "sessions": "세션",
+    "days": "일",
+    "page": "페이지",
+    "of": "/",
+    "prev": "이전",
+    "next": "다음"
+  },
+  "period": {
+    "7d": "7일",
+    "14d": "14일",
+    "30d": "30일"
+  },
+  "metrics": {
+    "totalSessions": "총 세션",
+    "successRate": "성공률",
+    "apiBlocked": "API 차단",
+    "wrongApproach": "잘못된 접근",
+    "contextOverflow": "컨텍스트 초과",
+    "fullyMostly": "완전 + 대부분 달성",
+    "sessionsWithApiErrors": "API 오류 발생 세션",
+    "requiredRework": "재작업 필요"
+  },
+  "overview": {
+    "title": "개요",
+    "sessionsAcross": "{{days}}일 간 {{count}}개 세션",
+    "dailySessions": "일별 세션",
+    "outcomes": "결과",
+    "frictionPoints": "마찰 요인",
+    "recentSessions": "최근 세션",
+    "id": "ID",
+    "goal": "목표",
+    "outcome": "결과",
+    "type": "유형"
+  },
+  "sessions": {
+    "title": "세션",
+    "searchPlaceholder": "목표 검색...",
+    "allOutcomes": "모든 결과",
+    "helpfulness": "유용성",
+    "friction": "마찰",
+    "summary": "요약",
+    "frictionDetail": "마찰 상세"
+  },
+  "bottlenecks": {
+    "title": "병목점",
+    "subtitle": "마찰 패턴 및 권장사항",
+    "detectedPatterns": "감지된 패턴",
+    "noPatterns": "심각한 병목 패턴이 감지되지 않았습니다. 잘 하고 계십니다!",
+    "recommendations": "권장사항",
+    "sessionsAffected": "개 세션 영향",
+    "ofTotal": "전체 대비"
+  },
+  "trends": {
+    "title": "트렌드",
+    "dateRange": "{{start}} ~ {{end}}",
+    "keyInsights": "주요 인사이트",
+    "dailySessions": "일별 세션",
+    "successRate": "성공률",
+    "apiBlockedRate": "API 차단율",
+    "usingMore": "Claude Code 사용 빈도가 증가하고 있습니다",
+    "usingLess": "Claude Code 사용량이 감소하고 있습니다",
+    "usageStable": "Claude Code 사용량이 일정합니다",
+    "successImproving": "🎉 성공률이 향상되고 있습니다!",
+    "successDeclining": "⚠️ 성공률이 하락 중 - 병목점을 확인하세요",
+    "successStable": "성공률이 안정적입니다",
+    "apiDecreasing": "✅ API 오류가 감소하고 있습니다",
+    "apiIncreasing": "🔴 API 오류 증가 - 인프라가 불안정할 수 있습니다",
+    "apiStable": "API 오류율이 안정적입니다"
+  },
+  "outcomes": {
+    "fully_achieved": "완전 달성",
+    "mostly_achieved": "대부분 달성",
+    "partially_achieved": "부분 달성",
+    "not_achieved": "미달성",
+    "unclear_from_transcript": "불명확",
+    "fully": "완전",
+    "mostly": "대부분",
+    "partial": "부분",
+    "failed": "실패"
+  },
+  "severity": {
+    "critical": "심각",
+    "high": "높음",
+    "medium": "중간",
+    "low": "낮음"
+  },
+  "reports": {
+    "title": "리포트",
+    "subtitle": "공식 Claude Code 인사이트",
+    "noReports": "리포트가 없습니다. cit collect 명령으로 리포트를 생성하세요.",
+    "loadingReport": "리포트 로딩 중...",
+    "selectReport": "보려는 리포트를 선택하세요"
+  }
+}
