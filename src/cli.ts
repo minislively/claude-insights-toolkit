@@ -59,6 +59,9 @@ program
       console.log(`  • Sessions collected: ${chalk.bold(result.sessionsCollected)}`);
       console.log(`  • Dates processed: ${chalk.bold(result.datesProcessed.join(', ') || 'none')}`);
       console.log(`  • Storage location: ${chalk.bold(result.storagePath)}`);
+      if (result.reportCopied && result.reportPath) {
+        console.log(`  • Report saved: ${chalk.bold(path.relative(process.cwd(), result.reportPath))}`);
+      }
     } catch (error) {
       spinner.fail(chalk.red('Failed to collect insights'));
       if (error instanceof Error) {
@@ -274,6 +277,58 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Failed to get status'));
+      process.exit(1);
+    }
+  });
+
+/**
+ * Report command - List or open saved insight reports
+ */
+program
+  .command('report')
+  .description('List or open saved insight reports')
+  .option('-d, --date <YYYY-MM-DD>', 'Open specific date report')
+  .option('-l, --list', 'List all saved reports')
+  .action(async (options) => {
+    const { homedir } = require('os');
+    const reportsPath = path.join(homedir(), 'claude-insights', 'reports');
+
+    try {
+      if (options.list || !options.date) {
+        // List all saved reports
+        const files = await fs.readdir(reportsPath).catch(() => []);
+        const reports = files.filter(f => f.endsWith('.html')).sort().reverse();
+
+        if (reports.length === 0) {
+          console.log(chalk.yellow('No reports found. Run /insights first.'));
+          return;
+        }
+
+        console.log(chalk.bold('\n📄 Saved Insight Reports'));
+        console.log(chalk.gray('━'.repeat(40)));
+        reports.forEach(r => {
+          const date = r.replace('report-', '').replace('.html', '');
+          console.log(`  ${date}  →  ${path.join(reportsPath, r)}`);
+        });
+        console.log(chalk.blue(`\nOpen with: cit report -d YYYY-MM-DD`));
+      } else {
+        // Open specific date report
+        const reportFile = path.join(reportsPath, `report-${options.date}.html`);
+        try {
+          await fs.access(reportFile);
+          // macOS open command
+          const { exec } = require('child_process');
+          exec(`open "${reportFile}"`);
+          console.log(chalk.green(`Opening report for ${options.date}...`));
+        } catch {
+          console.log(chalk.red(`No report found for ${options.date}`));
+        }
+      }
+    } catch (error) {
+      console.error(chalk.red('Failed to access reports'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
       process.exit(1);
     }
   });

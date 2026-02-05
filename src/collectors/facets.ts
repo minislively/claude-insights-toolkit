@@ -8,7 +8,9 @@ import { homedir } from 'os';
 import { IInsightsDay, ISessionFacet } from '../types/insights';
 
 const FACETS_PATH = path.join(homedir(), '.claude', 'usage-data', 'facets');
+const REPORT_PATH = path.join(homedir(), '.claude', 'usage-data', 'report.html');
 const DEFAULT_OUTPUT_PATH = path.join(homedir(), 'claude-insights', 'data');
+const REPORTS_OUTPUT_PATH = path.join(homedir(), 'claude-insights', 'reports');
 
 export interface ICollectOptions {
   date?: string; // YYYY-MM-DD format, defaults to today
@@ -20,6 +22,8 @@ export interface ICollectResult {
   sessionsCollected: number;
   datesProcessed: string[];
   storagePath: string;
+  reportCopied: boolean;
+  reportPath?: string;
 }
 
 /**
@@ -79,6 +83,26 @@ async function saveDailyData(date: string, sessions: ISessionFacet[], outputPath
 }
 
 /**
+ * Copy report.html if it exists
+ */
+async function copyReportHtml(date: string): Promise<{ copied: boolean; path?: string }> {
+  try {
+    await fs.access(REPORT_PATH);
+    await fs.mkdir(REPORTS_OUTPUT_PATH, { recursive: true });
+
+    const reportDestPath = path.join(REPORTS_OUTPUT_PATH, `report-${date}.html`);
+    await fs.copyFile(REPORT_PATH, reportDestPath);
+
+    return { copied: true, path: reportDestPath };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { copied: false };
+    }
+    throw error;
+  }
+}
+
+/**
  * Collect insights data from Claude Code facets
  */
 export async function collectFacets(options: ICollectOptions = {}): Promise<ICollectResult> {
@@ -106,10 +130,15 @@ export async function collectFacets(options: ICollectOptions = {}): Promise<ICol
     }
   }
 
+  // Copy report.html if available
+  const reportResult = await copyReportHtml(targetDate);
+
   return {
     sessionsCollected: totalSessions,
     datesProcessed,
     storagePath: outputPath,
+    reportCopied: reportResult.copied,
+    reportPath: reportResult.path,
   };
 }
 
