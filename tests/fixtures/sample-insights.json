@@ -1,0 +1,92 @@
+{
+  "date": "2025-02-05",
+  "sessions": [
+    {
+      "sessionId": "session-001",
+      "startTime": "2025-02-05T09:00:00Z",
+      "endTime": "2025-02-05T09:45:00Z",
+      "durationMinutes": 45,
+      "outcome": "success",
+      "claudeHelpfulness": "very_helpful",
+      "sessionType": "coding",
+      "primarySuccess": "task_completed",
+      "goalCategories": ["build_feature"],
+      "frictionPoints": ["missing_context"],
+      "notes": "Implemented new authentication flow"
+    },
+    {
+      "sessionId": "session-002",
+      "startTime": "2025-02-05T10:30:00Z",
+      "endTime": "2025-02-05T11:15:00Z",
+      "durationMinutes": 45,
+      "outcome": "success",
+      "claudeHelpfulness": "helpful",
+      "sessionType": "debugging",
+      "primarySuccess": "problem_solved",
+      "goalCategories": ["fix_bug"],
+      "frictionPoints": ["unexpected_behavior"],
+      "notes": "Fixed API integration issue"
+    },
+    {
+      "sessionId": "session-003",
+      "startTime": "2025-02-05T14:00:00Z",
+      "endTime": "2025-02-05T14:20:00Z",
+      "durationMinutes": 20,
+      "outcome": "success",
+      "claudeHelpfulness": "very_helpful",
+      "sessionType": "documentation",
+      "primarySuccess": "task_completed",
+      "goalCategories": ["write_docs"],
+      "frictionPoints": [],
+      "notes": "Updated README with new examples"
+    },
+    {
+      "sessionId": "session-004",
+      "startTime": "2025-02-05T15:00:00Z",
+      "endTime": "2025-02-05T16:30:00Z",
+      "durationMinutes": 90,
+      "outcome": "partial",
+      "claudeHelpfulness": "neutral",
+      "sessionType": "refactoring",
+      "primarySuccess": "made_progress",
+      "goalCategories": ["refactor_code"],
+      "frictionPoints": ["missing_context", "unclear_instructions"],
+      "notes": "Refactored data layer, need more context on schema"
+    },
+    {
+      "sessionId": "session-005",
+      "startTime": "2025-02-05T17:00:00Z",
+      "endTime": "2025-02-05T17:15:00Z",
+      "durationMinutes": 15,
+      "outcome": "success",
+      "claudeHelpfulness": "helpful",
+      "sessionType": "exploration",
+      "primarySuccess": "learned_something",
+      "goalCategories": ["learn"],
+      "frictionPoints": [],
+      "notes": "Explored new React patterns"
+    }
+  ],
+  "totalSessions": 5,
+  "totalDurationMinutes": 215,
+  "averageDurationMinutes": 43,
+  "frictionCounts": {
+    "missing_context": 2,
+    "unexpected_behavior": 1,
+    "unclear_instructions": 1,
+    "tool_limitations": 0,
+    "performance_issues": 0,
+    "other": 0
+  },
+  "goalCounts": {
+    "build_feature": 1,
+    "fix_bug": 1,
+    "refactor_code": 1,
+    "write_docs": 1,
+    "learn": 1,
+    "explore": 0,
+    "other": 0
+  },
+  "successRate": 80,
+  "claudeHelpfulnessAverage": 4.2
+}

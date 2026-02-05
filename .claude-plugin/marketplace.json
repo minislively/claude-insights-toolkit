@@ -1,0 +1,120 @@
+{
+  "name": "claude-insights-toolkit",
+  "version": "0.1.0",
+  "displayName": "Claude Insights Toolkit",
+  "description": "Automatically collect and analyze Claude Code insights to optimize your workflow and CLAUDE.md",
+  "author": {
+    "name": "Community",
+    "email": "",
+    "url": ""
+  },
+  "homepage": "https://github.com/yourusername/claude-insights-toolkit",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/claude-insights-toolkit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/claude-insights-toolkit/issues"
+  },
+  "keywords": [
+    "insights",
+    "analytics",
+    "productivity",
+    "bottleneck-detection",
+    "workflow-optimization",
+    "claude-md",
+    "automation"
+  ],
+  "categories": [
+    "productivity",
+    "analytics",
+    "documentation"
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "bin": {
+    "cit": "dist/cli.js"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "claudeCode": ">=1.0.0"
+  },
+  "activationEvents": [
+    "onCommand:cit.collect",
+    "onCommand:cit.analyze",
+    "onCommand:cit.suggest",
+    "onView:cit.dashboard"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "cit.collect",
+        "title": "Collect Insights",
+        "category": "Claude Insights"
+      },
+      {
+        "command": "cit.analyze",
+        "title": "Analyze Bottlenecks",
+        "category": "Claude Insights"
+      },
+      {
+        "command": "cit.suggest",
+        "title": "Generate CLAUDE.md Suggestions",
+        "category": "Claude Insights"
+      },
+      {
+        "command": "cit.trend",
+        "title": "Show Productivity Trends",
+        "category": "Claude Insights"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "cit.dashboard",
+          "name": "Insights Dashboard"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Claude Insights Toolkit",
+      "properties": {
+        "cit.dataPath": {
+          "type": "string",
+          "default": ".cit-data",
+          "description": "Path to store collected insights data"
+        },
+        "cit.maxDays": {
+          "type": "number",
+          "default": 90,
+          "description": "Maximum number of days to retain data"
+        },
+        "cit.autoCleanup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically clean up old data"
+        },
+        "cit.autoCollect": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically collect insights daily"
+        }
+      }
+    }
+  },
+  "badges": [
+    {
+      "url": "https://img.shields.io/npm/v/claude-insights-toolkit.svg",
+      "href": "https://www.npmjs.com/package/claude-insights-toolkit",
+      "description": "npm version"
+    },
+    {
+      "url": "https://img.shields.io/github/license/yourusername/claude-insights-toolkit.svg",
+      "href": "https://github.com/yourusername/claude-insights-toolkit/blob/main/LICENSE",
+      "description": "MIT License"
+    }
+  ],
+  "screenshots": [],
+  "pricing": "free",
+  "preview": true
+}

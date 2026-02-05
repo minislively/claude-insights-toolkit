@@ -1,0 +1,34 @@
+# Source files (only ship compiled dist/)
+src/
+tsconfig.json
+.eslintrc.js
+jest.config.js
+
+# Tests
+**/*.test.ts
+**/*.spec.ts
+tests/
+coverage/
+
+# Development
+.vscode/
+.idea/
+*.log
+.DS_Store
+
+# CI/CD
+.github/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Git
+.git/
+.gitignore
+
+# Local data
+.cit-data/
+collected-data/
+insights-db/

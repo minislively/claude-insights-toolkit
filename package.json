@@ -1,0 +1,53 @@
+{
+  "name": "claude-insights-toolkit",
+  "version": "0.1.0",
+  "description": "Open-source toolkit for Claude Code insights analysis, bottleneck detection, and CLAUDE.md optimization",
+  "main": "dist/index.js",
+  "bin": {
+    "cit": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/cli.ts",
+    "test": "jest",
+    "lint": "eslint src/",
+    "collect": "ts-node src/cli.ts collect",
+    "analyze": "ts-node src/cli.ts analyze",
+    "suggest": "ts-node src/cli.ts suggest"
+  },
+  "keywords": [
+    "claude-code",
+    "insights",
+    "productivity",
+    "ai-assistant",
+    "developer-tools"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/claude-insights-toolkit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/claude-insights-toolkit/issues"
+  },
+  "homepage": "https://github.com/yourusername/claude-insights-toolkit#readme",
+  "devDependencies": {
+    "@types/jest": "^29.0.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^11.0.0",
+    "ora": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
