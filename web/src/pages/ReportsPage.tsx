@@ -1,14 +1,12 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useReports, useReportContent } from '@/hooks'
+import { useReports } from '@/hooks'
 import { LoadingState, ErrorState, EmptyState } from '@/components/LoadingState'
 
 export function ReportsPage() {
   const { t } = useTranslation()
   const { reports, loading, error, refetch } = useReports()
   const [selectedReport, setSelectedReport] = useState<string | null>(null)
-  const { content, loading: contentLoading, error: contentError } = useReportContent(selectedReport)
-  const iframeRef = useRef<HTMLIFrameElement>(null)
 
   // Auto-select first report
   useEffect(() => {
@@ -16,18 +14,6 @@ export function ReportsPage() {
       setSelectedReport(reports[0].filename)
     }
   }, [reports, selectedReport])
-
-  // Write content to iframe
-  useEffect(() => {
-    if (content && iframeRef.current) {
-      const doc = iframeRef.current.contentDocument
-      if (doc) {
-        doc.open()
-        doc.write(content)
-        doc.close()
-      }
-    }
-  }, [content])
 
   if (loading) return <LoadingState />
   if (error) return <ErrorState message={error} onRetry={refetch} />
@@ -61,16 +47,12 @@ export function ReportsPage() {
 
       {/* Report Content */}
       <div className="flex-1 flex flex-col">
-        {contentLoading ? (
-          <LoadingState message={t('reports.loadingReport')} />
-        ) : contentError ? (
-          <ErrorState message={contentError} />
-        ) : content ? (
+        {selectedReport ? (
           <iframe
-            ref={iframeRef}
+            key={selectedReport}
+            src={`/api/report/${selectedReport}`}
             className="flex-1 w-full bg-white"
             title="Claude Code Report"
-            sandbox="allow-same-origin"
           />
         ) : (
           <div className="flex-1 flex items-center justify-center text-slate-500">
