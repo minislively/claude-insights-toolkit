@@ -4,7 +4,8 @@
     "sessions": "세션",
     "bottlenecks": "병목점",
     "trends": "트렌드",
-    "reports": "리포트"
+    "reports": "리포트",
+    "insights": "생산성 인사이트"
   },
   "common": {
     "dashboard": "대시보드",
@@ -46,7 +47,10 @@
     "id": "ID",
     "goal": "목표",
     "outcome": "결과",
-    "type": "유형"
+    "type": "유형",
+    "helpfulnessDistribution": "유용성 분포",
+    "sessionTypeDistribution": "세션 유형 분포",
+    "topCategories": "상위 목표 카테고리"
   },
   "sessions": {
     "title": "세션",
@@ -64,7 +68,11 @@
     "noPatterns": "심각한 병목 패턴이 감지되지 않았습니다. 잘 하고 계십니다!",
     "recommendations": "권장사항",
     "sessionsAffected": "개 세션 영향",
-    "ofTotal": "전체 대비"
+    "ofTotal": "전체 대비",
+    "highSeveritySessions": "고위험 세션",
+    "severityScore": "심각도 점수",
+    "frictionTextPatterns": "공통 마찰 패턴",
+    "occurrences": "회 발생"
   },
   "trends": {
     "title": "트렌드",
@@ -73,6 +81,8 @@
     "dailySessions": "일별 세션",
     "successRate": "성공률",
     "apiBlockedRate": "API 차단율",
+    "satisfactionRatio": "만족도 비율",
+    "helpfulnessScore": "유용성 점수",
     "usingMore": "Claude Code 사용 빈도가 증가하고 있습니다",
     "usingLess": "Claude Code 사용량이 감소하고 있습니다",
     "usageStable": "Claude Code 사용량이 일정합니다",
@@ -81,7 +91,9 @@
     "successStable": "성공률이 안정적입니다",
     "apiDecreasing": "✅ API 오류가 감소하고 있습니다",
     "apiIncreasing": "🔴 API 오류 증가 - 인프라가 불안정할 수 있습니다",
-    "apiStable": "API 오류율이 안정적입니다"
+    "apiStable": "API 오류율이 안정적입니다",
+    "satisfiedSessions": "해결된 세션의 만족도 비율",
+    "helpfulnessAvg": "평균 유용성 점수 (1-4)"
   },
   "outcomes": {
     "fully_achieved": "완전 달성",
@@ -106,5 +118,60 @@
     "noReports": "리포트가 없습니다. cit collect 명령으로 리포트를 생성하세요.",
     "loadingReport": "리포트 로딩 중...",
     "selectReport": "보려는 리포트를 선택하세요"
+  },
+  "helpfulness": {
+    "very_helpful": "매우 유용",
+    "moderately_helpful": "상당히 유용",
+    "slightly_helpful": "약간 유용",
+    "unhelpful": "유용하지 않음"
+  },
+  "sessionTypes": {
+    "single_task": "단일 작업",
+    "multi_task": "다중 작업",
+    "quick_question": "빠른 질문",
+    "iterative_refinement": "반복 개선",
+    "exploration": "탐색"
+  },
+  "primarySuccess": {
+    "correct_code_edits": "정확한 코드 수정",
+    "multi_file_changes": "다중 파일 변경",
+    "fast_accurate_search": "빠르고 정확한 검색",
+    "none": "없음"
+  },
+  "satisfaction": {
+    "satisfied": "만족",
+    "likely_satisfied": "대체로 만족",
+    "dissatisfied": "불만족",
+    "frustrated": "매우 불만족"
+  },
+  "insights": {
+    "title": "생산성 인사이트",
+    "subtitle": "작업 패턴 심층 분석 및 실행 가능한 권장사항",
+    "workPatterns": "작업 패턴 분석",
+    "workPatternsDesc": "카테고리 및 세션 유형별 Claude Code 사용 방식",
+    "satisfactionHelpfulness": "만족도 & 유용성",
+    "satisfactionHelpfulnessDesc": "사용자 만족도 및 Claude 유용성 분석",
+    "successPatterns": "성공 패턴",
+    "successPatternsDesc": "성공적인 결과를 이끄는 요인",
+    "actionableRec": "실행 가능한 권장사항",
+    "actionableRecDesc": "생산성 향상을 위한 데이터 기반 제안",
+    "avgHelpfulness": "평균 유용성",
+    "satisfactionRatio": "만족도 비율",
+    "topCategory": "상위 카테고리",
+    "dominantType": "주요 유형",
+    "helpfulnessDistribution": "유용성 분포",
+    "satisfactionDistribution": "만족도 분포",
+    "noSatisfactionData": "아직 만족도 데이터가 수집되지 않았습니다",
+    "helpfulnessVsOutcome": "유용성 vs 결과",
+    "topGoalCategories": "상위 목표 카테고리",
+    "categoryOutcomes": "카테고리 → 결과 매트릭스",
+    "sessionTypeDistribution": "세션 유형 분포",
+    "sessionTypeOutcome": "세션 유형 → 결과",
+    "primarySuccessTypes": "주요 성공 유형",
+    "categorySuccessRate": "카테고리 성공률",
+    "strength": "강점",
+    "weakness": "약점",
+    "opportunity": "기회",
+    "noRecommendations": "권장사항을 생성하기에 충분한 데이터가 없습니다. Claude Code를 계속 사용하세요!"
   }
 }

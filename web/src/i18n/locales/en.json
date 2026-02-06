@@ -4,7 +4,8 @@
     "sessions": "Sessions",
     "bottlenecks": "Bottlenecks",
     "trends": "Trends",
-    "reports": "Reports"
+    "reports": "Reports",
+    "insights": "Productivity Insights"
   },
   "common": {
     "dashboard": "Dashboard",
@@ -46,7 +47,10 @@
     "id": "ID",
     "goal": "Goal",
     "outcome": "Outcome",
-    "type": "Type"
+    "type": "Type",
+    "helpfulnessDistribution": "Helpfulness Distribution",
+    "sessionTypeDistribution": "Session Type Distribution",
+    "topCategories": "Top Goal Categories"
   },
   "sessions": {
     "title": "Sessions",
@@ -64,7 +68,11 @@
     "noPatterns": "No significant bottleneck patterns detected. Keep up the good work!",
     "recommendations": "Recommendations",
     "sessionsAffected": "sessions affected",
-    "ofTotal": "of total"
+    "ofTotal": "of total",
+    "highSeveritySessions": "High Severity Sessions",
+    "severityScore": "Severity Score",
+    "frictionTextPatterns": "Common Friction Patterns",
+    "occurrences": "occurrences"
   },
   "trends": {
     "title": "Trends",
@@ -73,6 +81,8 @@
     "dailySessions": "Daily Sessions",
     "successRate": "Success Rate",
     "apiBlockedRate": "API Blocked Rate",
+    "satisfactionRatio": "Satisfaction Ratio",
+    "helpfulnessScore": "Helpfulness Score",
     "usingMore": "You're using Claude Code more frequently",
     "usingLess": "Claude Code usage is declining",
     "usageStable": "Claude Code usage is consistent",
@@ -81,7 +91,9 @@
     "successStable": "Success rate is stable",
     "apiDecreasing": "✅ API errors are decreasing",
     "apiIncreasing": "🔴 API errors are increasing - infrastructure may be unstable",
-    "apiStable": "API error rate is stable"
+    "apiStable": "API error rate is stable",
+    "satisfiedSessions": "Satisfaction ratio of resolved sessions",
+    "helpfulnessAvg": "Average helpfulness score (1-4)"
   },
   "outcomes": {
     "fully_achieved": "Fully Achieved",
@@ -106,5 +118,60 @@
     "noReports": "No reports available. Run cit collect to generate reports.",
     "loadingReport": "Loading report...",
     "selectReport": "Select a report to view"
+  },
+  "helpfulness": {
+    "very_helpful": "Very Helpful",
+    "moderately_helpful": "Moderately Helpful",
+    "slightly_helpful": "Slightly Helpful",
+    "unhelpful": "Unhelpful"
+  },
+  "sessionTypes": {
+    "single_task": "Single Task",
+    "multi_task": "Multi Task",
+    "quick_question": "Quick Question",
+    "iterative_refinement": "Iterative Refinement",
+    "exploration": "Exploration"
+  },
+  "primarySuccess": {
+    "correct_code_edits": "Correct Code Edits",
+    "multi_file_changes": "Multi-File Changes",
+    "fast_accurate_search": "Fast Accurate Search",
+    "none": "None"
+  },
+  "satisfaction": {
+    "satisfied": "Satisfied",
+    "likely_satisfied": "Likely Satisfied",
+    "dissatisfied": "Dissatisfied",
+    "frustrated": "Frustrated"
+  },
+  "insights": {
+    "title": "Productivity Insights",
+    "subtitle": "Deep analysis of work patterns and actionable recommendations",
+    "workPatterns": "Work Pattern Analysis",
+    "workPatternsDesc": "How you use Claude Code across categories and session types",
+    "satisfactionHelpfulness": "Satisfaction & Helpfulness",
+    "satisfactionHelpfulnessDesc": "User satisfaction and Claude helpfulness analysis",
+    "successPatterns": "Success Patterns",
+    "successPatternsDesc": "What drives successful outcomes",
+    "actionableRec": "Actionable Recommendations",
+    "actionableRecDesc": "Data-driven suggestions to improve productivity",
+    "avgHelpfulness": "Avg Helpfulness",
+    "satisfactionRatio": "Satisfaction Ratio",
+    "topCategory": "Top Category",
+    "dominantType": "Dominant Type",
+    "helpfulnessDistribution": "Helpfulness Distribution",
+    "satisfactionDistribution": "Satisfaction Distribution",
+    "noSatisfactionData": "No satisfaction data collected yet",
+    "helpfulnessVsOutcome": "Helpfulness vs Outcome",
+    "topGoalCategories": "Top Goal Categories",
+    "categoryOutcomes": "Category → Outcome Matrix",
+    "sessionTypeDistribution": "Session Type Distribution",
+    "sessionTypeOutcome": "Session Type → Outcome",
+    "primarySuccessTypes": "Primary Success Types",
+    "categorySuccessRate": "Category Success Rate",
+    "strength": "Strength",
+    "weakness": "Weakness",
+    "opportunity": "Opportunity",
+    "noRecommendations": "Not enough data for recommendations. Keep using Claude Code!"
   }
 }
