@@ -6,3 +6,4 @@ export * from './bottleneck';
 export * from './trends';
 export * from './compare';
 export * from './productivity';
+export * from './profile';

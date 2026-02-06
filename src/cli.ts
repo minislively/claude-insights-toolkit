@@ -29,6 +29,12 @@ import { sync, pull, push, addRemote, removeRemote, listRemotes, getDeviceId } f
 // Import generators
 import { generateClaudeMdSuggestions, formatSuggestionsAsMarkdown, generateSuggestionSummary } from './generators/claude-md';
 
+// Import parsers
+import { loadLatestReport } from './parsers/report-html';
+
+// Import profile
+import { generateProfile, formatProfileText } from './analyzers/profile';
+
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -577,6 +583,69 @@ program
       }
     } catch (error) {
       spinner.fail(chalk.red('Clone failed'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
+/**
+ * Profile command - Generate your Claude Code coding style profile
+ */
+program
+  .command('profile')
+  .description('Generate your Claude Code coding style profile')
+  .option('-o, --output <format>', 'Output format (text|json)', 'text')
+  .option('-s, --save <path>', 'Save profile to file')
+  .action(async (options) => {
+    const spinner = ora('Generating your coding profile...').start();
+
+    try {
+      // Load report.html data
+      const reportData = await loadLatestReport();
+
+      if (!reportData) {
+        spinner.fail(chalk.red('No report.html found.'));
+        console.log(chalk.yellow('\nTo generate a report:'));
+        console.log('  1. Run /insights in your Claude Code session');
+        console.log('  2. Then run: cit collect');
+        console.log(chalk.gray('\nReport locations checked:'));
+        console.log('  • ~/claude-insights/reports/report-*.html');
+        console.log('  • ~/.claude/usage-data/report.html');
+        process.exit(1);
+      }
+
+      // Optionally load facets data for enrichment
+      let facetsData;
+      try {
+        facetsData = await loadStoredData({ days: 30 });
+      } catch {
+        // No facets data available, that's fine
+      }
+
+      const profile = generateProfile(reportData, facetsData);
+      spinner.succeed(chalk.green('Profile generated'));
+
+      if (options.output === 'json') {
+        const jsonOutput = JSON.stringify(profile, null, 2);
+        if (options.save) {
+          await fs.writeFile(options.save, jsonOutput);
+          console.log(chalk.blue(`\n✅ Profile saved to: ${options.save}`));
+        } else {
+          console.log(jsonOutput);
+        }
+      } else {
+        const textOutput = formatProfileText(profile);
+        if (options.save) {
+          await fs.writeFile(options.save, textOutput);
+          console.log(chalk.blue(`\n✅ Profile saved to: ${options.save}`));
+        } else {
+          console.log('\n' + textOutput);
+        }
+      }
+    } catch (error) {
+      spinner.fail(chalk.red('Profile generation failed'));
       if (error instanceof Error) {
         console.error(chalk.red(`Error: ${error.message}`));
       }
