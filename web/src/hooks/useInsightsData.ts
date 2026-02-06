@@ -17,7 +17,8 @@ export function useInsightsData(days: number = 30): UseInsightsDataReturn {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/data?days=${days}`)
+      const url = days === 0 ? '/api/data?days=0' : `/api/data?days=${days}`
+      const res = await fetch(url)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       setData(json)

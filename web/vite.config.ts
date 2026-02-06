@@ -18,11 +18,11 @@ function insightsApiPlugin() {
 
           let files: string[] = []
           try {
-            files = fs.readdirSync(DATA_DIR)
+            const allFiles = fs.readdirSync(DATA_DIR)
               .filter((f: string) => f.endsWith('.json'))
               .sort()
               .reverse()
-              .slice(0, days)
+            files = days === 0 ? allFiles : allFiles.slice(0, days)
           } catch {
             files = []
           }
