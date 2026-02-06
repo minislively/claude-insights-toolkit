@@ -198,6 +198,100 @@ Visualize your productivity trends in the web dashboard.
 
 ---
 
+## Auto-Collection Setup (Recommended)
+
+Claude Code only generates insights data (`facets/*.json`) when you run `/insights` inside a session. Without it, no new data is created. To ensure continuous data collection:
+
+### Step 1: Add CLAUDE.md Directive
+
+Add the following to your `~/.claude/CLAUDE.md` (or project-level CLAUDE.md):
+
+```markdown
+## Session End Protocol
+- At the end of each day's last Claude Code session, run `/insights` before closing
+- This generates fresh session analysis data for productivity tracking
+- After `/insights`, data is automatically collected by the toolkit's hook
+```
+
+### Step 2: Install Auto-Collect Hook
+
+Create the hook file that automatically runs `cit collect` whenever `/insights` is executed:
+
+```bash
+# Create hooks directory
+mkdir -p ~/.claude/hooks
+
+# Create the auto-collect hook
+cat > ~/.claude/hooks/insights-auto-collect.sh << 'HOOK'
+#!/bin/bash
+INPUT=$(cat)
+PROMPT=$(echo "$INPUT" | jq -r '.prompt // empty')
+
+if [[ "$PROMPT" == *"/insights"* ]]; then
+  (cd ~/path-to/claude-insights-toolkit && \
+   node dist/cli.js collect --date $(date +%Y-%m-%d) > /dev/null 2>&1
+
+   REPORT_SRC="$HOME/.claude/usage-data/report.html"
+   REPORT_DST="$HOME/claude-insights/reports/report-$(date +%Y-%m-%d).html"
+   if [ -f "$REPORT_SRC" ]; then
+     mkdir -p "$HOME/claude-insights/reports"
+     cp "$REPORT_SRC" "$REPORT_DST"
+   fi
+  ) &
+
+  echo "📊 Auto-collecting insights data to ~/claude-insights/data/$(date +%Y-%m-%d).json"
+fi
+
+exit 0
+HOOK
+
+chmod +x ~/.claude/hooks/insights-auto-collect.sh
+```
+
+> **Note:** Replace `~/path-to/claude-insights-toolkit` with your actual installation path.
+
+### Step 3: Register Hook in Claude Code Settings
+
+Add the hook to `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/insights-auto-collect.sh",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### How It Works
+
+```
+You run /insights in Claude Code
+    → Claude analyzes recent sessions
+    → Generates facets/*.json + report.html
+    → Hook detects /insights and runs cit collect
+    → Data saved to ~/claude-insights/data/YYYY-MM-DD.json
+    → Available in dashboard and CLI analysis
+```
+
+### Token Cost
+
+- `/insights` uses some tokens each time it runs (Claude analyzes session history)
+- Running once per day (last session) is the recommended balance
+- `cit collect` itself uses **zero tokens** — it just copies files
+
+---
+
 ## Multi-Device Sync Setup
 
 Synchronize your insights data across computers using a private GitHub repository.
