@@ -114,6 +114,30 @@ function insightsApiPlugin() {
         }
       })
 
+      server.middlewares.use('/api/snapshots', async (_req: any, res: any) => {
+        const SNAPSHOTS_DIR = path.join(homedir(), 'claude-insights', 'snapshots')
+        try {
+          let files: string[] = []
+          try {
+            files = fs.readdirSync(SNAPSHOTS_DIR)
+              .filter((f: string) => f.endsWith('.json'))
+              .sort()
+              .reverse()
+          } catch {
+            files = []
+          }
+          const snapshots = files.map((f: string) => {
+            const content = fs.readFileSync(path.join(SNAPSHOTS_DIR, f), 'utf-8')
+            return JSON.parse(content)
+          })
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify(snapshots))
+        } catch (err) {
+          res.statusCode = 500
+          res.end(JSON.stringify({ error: 'Failed to load snapshots' }))
+        }
+      })
+
       server.middlewares.use('/api/profile', async (_req: any, res: any) => {
         try {
           // Find the latest report

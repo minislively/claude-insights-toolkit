@@ -6,6 +6,7 @@
     "trends": "트렌드",
     "reports": "리포트",
     "profile": "프로필",
+    "history": "히스토리",
     "insights": "생산성 인사이트"
   },
   "common": {
@@ -212,5 +213,26 @@
     "recommendations": "권장사항",
     "claudeMdAdditions": "CLAUDE.md 추가 제안",
     "featureRecs": "기능 권장사항"
+  },
+  "history": {
+    "title": "스냅샷 히스토리",
+    "subtitle": "Claude Code 사용 변화를 추적합니다",
+    "totalSnapshots": "전체 스냅샷",
+    "firstSnapshot": "첫 스냅샷",
+    "latestSnapshot": "최근 스냅샷",
+    "latestSuccessRate": "최근 성공률",
+    "sessionsOverTime": "시간별 세션 수",
+    "successRateOverTime": "시간별 성공률",
+    "snapshotTable": "스냅샷 상세",
+    "date": "날짜",
+    "sessions": "세션",
+    "messages": "메시지",
+    "successRate": "성공률",
+    "language": "언어",
+    "anomalies": "이상치",
+    "noSnapshots": "스냅샷이 없습니다. cit collect을 실행하여 첫 스냅샷을 생성하세요.",
+    "anomalyAlerts": "이상치 경고",
+    "critical": "심각",
+    "warning": "경고"
   }
 }

@@ -209,6 +209,63 @@ export interface IClaudeMdSuggestion {
 }
 
 /**
+ * Snapshot key metrics extracted from report.html
+ */
+export interface ISnapshotKeyMetrics {
+  sessions: number;
+  messages: number;
+  days: number;
+  msgsPerDay: number;
+  linesAdded: number;
+  linesRemoved: number;
+  files: number;
+  successRate: number; // percentage
+  primaryLanguage: string;
+  dateRangeStart: string; // YYYY-MM-DD
+  dateRangeEnd: string; // YYYY-MM-DD
+}
+
+/**
+ * Snapshot anomaly detected when comparing to previous snapshot
+ */
+export interface ISnapshotAnomaly {
+  type: 'session_drop' | 'date_range_shrink' | 'success_rate_drop' | 'message_drop';
+  severity: 'critical' | 'warning' | 'info';
+  message: string;
+  details: {
+    previous: number | string;
+    current: number | string;
+    changePercent?: number;
+  };
+}
+
+/**
+ * Delta comparison between two snapshots
+ */
+export interface ISnapshotDelta {
+  sessionsDiff: number;
+  sessionsDiffPercent: number;
+  messagesDiff: number;
+  successRateDiff: number;
+  anomalies: ISnapshotAnomaly[];
+}
+
+/**
+ * A point-in-time snapshot of report.html metrics
+ */
+export interface ISnapshot {
+  version: 1;
+  date: string; // YYYY-MM-DD
+  createdAt: string; // ISO 8601
+  metrics: ISnapshotKeyMetrics;
+  delta: ISnapshotDelta | null; // null if first snapshot
+  source: {
+    reportHtmlPath: string;
+    facetsCollected: number;
+  };
+}
+
+/**
  * Storage configuration
  */
 export interface IStorageConfig {

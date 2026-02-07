@@ -31,6 +31,7 @@ import { generateClaudeMdSuggestions, formatSuggestionsAsMarkdown, generateSugge
 
 // Import parsers
 import { loadLatestReport } from './parsers/report-html';
+import { loadAllSnapshots } from './collectors/snapshot';
 
 // Import profile
 import { generateProfile, formatProfileText } from './analyzers/profile';
@@ -72,6 +73,9 @@ program
       console.log(`  • Storage location: ${chalk.bold(result.storagePath)}`);
       if (result.reportCopied && result.reportPath) {
         console.log(`  • Report saved: ${chalk.bold(path.relative(process.cwd(), result.reportPath))}`);
+      }
+      if (result.snapshotCreated && result.snapshotPath) {
+        console.log(`  • Snapshot saved: ${chalk.bold(path.basename(result.snapshotPath))}`);
       }
     } catch (error) {
       spinner.fail(chalk.red('Failed to collect insights'));
@@ -583,6 +587,98 @@ program
       }
     } catch (error) {
       spinner.fail(chalk.red('Clone failed'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
+/**
+ * History command - View snapshot history
+ */
+program
+  .command('history')
+  .description('View snapshot history and track usage trends')
+  .option('-l, --last <number>', 'Show last N snapshots', '10')
+  .option('-o, --output <format>', 'Output format (text|json)', 'text')
+  .action(async (options) => {
+    const spinner = ora('Loading snapshot history...').start();
+
+    try {
+      const snapshots = await loadAllSnapshots();
+
+      if (snapshots.length === 0) {
+        spinner.warn(chalk.yellow('No snapshots found. Run `cit collect` first.'));
+        return;
+      }
+
+      spinner.succeed(chalk.green(`Found ${snapshots.length} snapshots`));
+
+      const limit = parseInt(options.last);
+      const display = snapshots.slice(-limit).reverse();
+
+      if (options.output === 'json') {
+        console.log(JSON.stringify(display, null, 2));
+        return;
+      }
+
+      console.log(chalk.bold('\n📸 Snapshot History'));
+      console.log(chalk.gray('━'.repeat(90)));
+
+      // Header
+      console.log(
+        chalk.gray(
+          '  Date        │ Sessions │ Success │ Language    │ Anomalies'
+        )
+      );
+      console.log(chalk.gray('  ' + '─'.repeat(86)));
+
+      // Rows
+      for (const snap of display) {
+        const m = snap.metrics;
+        const anomalyCount = snap.delta?.anomalies.length || 0;
+        const hasCritical = snap.delta?.anomalies.some(a => a.severity === 'critical') || false;
+
+        const anomalyStr = anomalyCount === 0
+          ? chalk.green('none')
+          : hasCritical
+            ? chalk.red(`${anomalyCount} (CRITICAL)`)
+            : chalk.yellow(`${anomalyCount} warning(s)`);
+
+        const successStr = m.successRate >= 80
+          ? chalk.green(`${m.successRate}%`)
+          : m.successRate >= 60
+            ? chalk.yellow(`${m.successRate}%`)
+            : chalk.red(`${m.successRate}%`);
+
+        console.log(
+          `  ${snap.date}  │ ${String(m.sessions).padStart(8)} │ ${String(successStr).padStart(7 + 10)} │ ${m.primaryLanguage.padEnd(11)} │ ${anomalyStr}`
+        );
+      }
+
+      // Summary
+      const first = snapshots[0];
+      const last = snapshots[snapshots.length - 1];
+      console.log(chalk.gray('\n  ' + '─'.repeat(86)));
+      console.log(`  Period: ${chalk.bold(first.date)} → ${chalk.bold(last.date)} (${chalk.bold(snapshots.length)} snapshots)`);
+
+      // Show anomalies if any recent ones
+      const recentAnomalies = display
+        .filter(s => s.delta && s.delta.anomalies.length > 0)
+        .slice(0, 3);
+
+      if (recentAnomalies.length > 0) {
+        console.log(chalk.bold('\n⚠️  Recent Anomalies:'));
+        for (const snap of recentAnomalies) {
+          for (const anomaly of snap.delta!.anomalies) {
+            const icon = anomaly.severity === 'critical' ? '🔴' : '🟡';
+            console.log(`  ${icon} [${snap.date}] ${anomaly.message}`);
+          }
+        }
+      }
+    } catch (error) {
+      spinner.fail(chalk.red('Failed to load history'));
       if (error instanceof Error) {
         console.error(chalk.red(`Error: ${error.message}`));
       }

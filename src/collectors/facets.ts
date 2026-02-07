@@ -24,6 +24,8 @@ export interface ICollectResult {
   storagePath: string;
   reportCopied: boolean;
   reportPath?: string;
+  snapshotCreated: boolean;
+  snapshotPath?: string;
 }
 
 /**
@@ -133,12 +135,33 @@ export async function collectFacets(options: ICollectOptions = {}): Promise<ICol
   // Copy report.html if available
   const reportResult = await copyReportHtml(targetDate);
 
+  // Create snapshot from report if available
+  let snapshotCreated = false;
+  let snapshotPath: string | undefined;
+
+  if (reportResult.copied && reportResult.path) {
+    try {
+      const { createSnapshot } = await import('./snapshot');
+      const snapshotResult = await createSnapshot(
+        reportResult.path,
+        totalSessions,
+        targetDate,
+      );
+      snapshotCreated = true;
+      snapshotPath = snapshotResult.path;
+    } catch (error) {
+      console.warn('Warning: Failed to create snapshot:', error instanceof Error ? error.message : error);
+    }
+  }
+
   return {
     sessionsCollected: totalSessions,
     datesProcessed,
     storagePath: outputPath,
     reportCopied: reportResult.copied,
     reportPath: reportResult.path,
+    snapshotCreated,
+    snapshotPath,
   };
 }
 

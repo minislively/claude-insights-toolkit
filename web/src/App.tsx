@@ -6,6 +6,7 @@ import { BottlenecksPage } from '@/pages/BottlenecksPage'
 import { TrendsPage } from '@/pages/TrendsPage'
 import { ReportsPage } from '@/pages/ReportsPage'
 import { ProfilePage } from '@/pages/ProfilePage'
+import { HistoryPage } from '@/pages/HistoryPage'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="trends" element={<TrendsPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="history" element={<HistoryPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

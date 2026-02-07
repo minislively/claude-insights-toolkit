@@ -6,6 +6,7 @@
     "trends": "Trends",
     "reports": "Reports",
     "profile": "Profile",
+    "history": "History",
     "insights": "Productivity Insights"
   },
   "common": {
@@ -212,5 +213,26 @@
     "recommendations": "Recommendations",
     "claudeMdAdditions": "Suggested CLAUDE.md Additions",
     "featureRecs": "Feature Recommendations"
+  },
+  "history": {
+    "title": "Snapshot History",
+    "subtitle": "Track your Claude Code usage over time",
+    "totalSnapshots": "Total Snapshots",
+    "firstSnapshot": "First Snapshot",
+    "latestSnapshot": "Latest Snapshot",
+    "latestSuccessRate": "Latest Success Rate",
+    "sessionsOverTime": "Sessions Over Time",
+    "successRateOverTime": "Success Rate Over Time",
+    "snapshotTable": "Snapshot Details",
+    "date": "Date",
+    "sessions": "Sessions",
+    "messages": "Messages",
+    "successRate": "Success Rate",
+    "language": "Language",
+    "anomalies": "Anomalies",
+    "noSnapshots": "No snapshots yet. Run cit collect to create your first snapshot.",
+    "anomalyAlerts": "Anomaly Alerts",
+    "critical": "Critical",
+    "warning": "Warning"
   }
 }

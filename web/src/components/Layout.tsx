@@ -12,6 +12,7 @@ export function Layout() {
     { to: '/trends', label: t('nav.trends'), icon: '📈' },
     { to: '/reports', label: t('nav.reports'), icon: '📄' },
     { to: '/profile', label: t('nav.profile'), icon: '👤' },
+    { to: '/history', label: t('nav.history'), icon: '📸' },
   ]
   return (
     <div className="flex h-screen bg-slate-900 text-slate-100">
