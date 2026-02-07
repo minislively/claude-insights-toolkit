@@ -80,6 +80,9 @@ tests/fixtures/generated/
 # Local development
 *.local
 
+# OMC (oh-my-claudecode) state
+.omc/
+
 # Collected insights data (user data should not be committed)
 collected-data/
 insights-db/
