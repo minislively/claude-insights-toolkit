@@ -24,6 +24,8 @@ Claude Code's `/insights` command provides powerful productivity data, but:
 2. ✅ Detects bottleneck patterns in your workflow
 3. ✅ Auto-generates CLAUDE.md improvement suggestions
 4. ✅ Tracks productivity trends over time
+5. ✅ Provides interactive web dashboard with charts
+6. ✅ Generates your coding style profile
 
 ### 🚀 Quick Start
 
@@ -101,6 +103,15 @@ cit collect && cit sync
 | `cit suggest` | Generate CLAUDE.md improvements | `--category friction\|goal` |
 | `cit trend` | Show productivity trend charts | `--days N`, `--metric sessions\|time` |
 
+#### Reports & Profile
+
+| Command | Description | Options |
+|---------|-------------|---------|
+| `cit status` | Quick data overview | - |
+| `cit report` | List and open HTML reports | - |
+| `cit compare` | Compare insights between two dates | `--date1 YYYY-MM-DD`, `--date2 YYYY-MM-DD` |
+| `cit profile` | Generate coding style profile | `--format text\|json`, `--save` |
+
 #### Multi-Device Sync
 
 | Command | Description | Options |
@@ -111,6 +122,53 @@ cit collect && cit sync
 | `cit pull` | Pull latest data from remote | - |
 | `cit push` | Push local data to remote | - |
 | `cit remote add <url>` | Manually add remote repository | - |
+
+### 🖥️ Web Dashboard
+
+Interactive web dashboard with charts and analytics:
+
+```bash
+# Start the dashboard
+cit dashboard
+# or
+cd web && npm run dev
+```
+
+**Features:**
+- Overview with key metrics
+- Session history and details
+- Bottleneck/friction analysis with charts
+- Productivity trends over time
+- HTML report viewer
+- Coding style profile visualization
+- Multi-language support (English/Korean)
+- Period filtering (1 day, 7 days, 14 days, 30 days, all-time)
+
+### ⚡ Auto-Collection Setup
+
+Automatically collect insights data after every Claude Code session using hooks:
+
+```bash
+# See the setup guide
+cat docs/INSTALL.md
+```
+
+Or manually add to `~/.claude/settings.json`:
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [{
+      "hooks": [{
+        "type": "command",
+        "command": "path/to/insights-auto-collect.sh",
+        "timeout": 5000
+      }]
+    }]
+  }
+}
+```
+
+See [INSTALL.md](./docs/INSTALL.md) for detailed setup instructions.
 
 ### 📊 Example Output
 
@@ -167,7 +225,12 @@ MIT License - see [LICENSE](./LICENSE) file
 
 ### 🌟 Roadmap
 
-- [ ] Web dashboard for visualizing trends
+- [x] Web dashboard for visualizing trends
+- [x] Coding style profile generation
+- [x] Multi-device sync via Git
+- [x] Auto-collection via hooks
+- [x] HTML report parsing and viewing
+- [x] Date comparison analysis
 - [ ] Integration with CI/CD for team analytics
 - [ ] AI-powered recommendation engine
 - [ ] Export reports to Notion/Slack
@@ -189,6 +252,8 @@ Claude Code의 `/insights` 명령어는 강력한 생산성 데이터를 제공�
 2. ✅ 워크플로우의 병목 지점 패턴 감지
 3. ✅ CLAUDE.md 개선 제안 자동 생성
 4. ✅ 시간 경과에 따른 생산성 트렌드 추적
+5. ✅ 차트가 포함된 인터랙티브 웹 대시보드 제공
+6. ✅ 코딩 스타일 프로파일 생성
 
 ### 🚀 빠른 시작
 
@@ -266,6 +331,15 @@ cit collect && cit sync
 | `cit suggest` | CLAUDE.md 개선 사항 생성 | `--category friction\|goal` |
 | `cit trend` | 생산성 트렌드 차트 표시 | `--days N`, `--metric sessions\|time` |
 
+#### 리포트 & 프로파일
+
+| 명령어 | 설명 | 옵션 |
+|-------|------|------|
+| `cit status` | 데이터 상태 요약 보기 | - |
+| `cit report` | HTML 리포트 목록 및 열기 | - |
+| `cit compare` | 두 날짜의 인사이트 비교 | `--date1 YYYY-MM-DD`, `--date2 YYYY-MM-DD` |
+| `cit profile` | 코딩 스타일 프로파일 생성 | `--format text\|json`, `--save` |
+
 #### 멀티 디바이스 동기화
 
 | 명령어 | 설명 | 옵션 |
@@ -276,6 +350,38 @@ cit collect && cit sync
 | `cit pull` | 원격에서 최신 데이터 가져오기 | - |
 | `cit push` | 로컬 데이터를 원격에 푸시 | - |
 | `cit remote add <url>` | 수동으로 원격 저장소 추가 | - |
+
+### 🖥️ 웹 대시보드
+
+차트와 분석이 포함된 인터랙티브 웹 대시보드:
+
+```bash
+# 대시보드 시작
+cit dashboard
+# 또는
+cd web && npm run dev
+```
+
+**기능:**
+- 주요 지표 개요
+- 세션 히스토리 및 상세 정보
+- 병목/마찰 분석 차트
+- 시간별 생산성 트렌드
+- HTML 리포트 뷰어
+- 코딩 스타일 프로파일 시각화
+- 다국어 지원 (영어/한국어)
+- 기간 필터 (1일, 7일, 14일, 30일, 전체)
+
+### ⚡ 자동 수집 설정
+
+Claude Code 훅을 사용하여 매 세션마다 자동으로 인사이트 데이터를 수집합니다:
+
+```bash
+# 설정 가이드 보기
+cat docs/INSTALL.md
+```
+
+자세한 설정 방법은 [INSTALL.md](./docs/INSTALL.md)를 참고하세요.
 
 ### 📊 출력 예시
 
@@ -332,7 +438,12 @@ MIT 라이선스 - [LICENSE](./LICENSE) 파일 참고
 
 ### 🌟 로드맵
 
-- [ ] 트렌드 시각화를 위한 웹 대시보드
+- [x] 트렌드 시각화를 위한 웹 대시보드
+- [x] 코딩 스타일 프로파일 생성
+- [x] Git을 통한 멀티 디바이스 동기화
+- [x] 훅을 통한 자동 수집
+- [x] HTML 리포트 파싱 및 보기
+- [x] 날짜별 비교 분석
 - [ ] 팀 분석을 위한 CI/CD 통합
 - [ ] AI 기반 추천 엔진
 - [ ] Notion/Slack으로 리포트 내보내기
