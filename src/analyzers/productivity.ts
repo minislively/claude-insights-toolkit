@@ -5,6 +5,7 @@
  */
 
 import type { IInsightsDay, ISessionFacet, ICountObject } from '../types/insights';
+import { deduplicateSessions } from '../utils/sessions';
 
 // ── Result Interfaces ──────────────────────────────────────────────
 
@@ -141,7 +142,7 @@ function isSuccessful(outcome: string): boolean {
 // ── Main Analyzer ───────────────────────────────────────────────────
 
 export function analyzeProductivity(data: IInsightsDay[]): IProductivityResult {
-  const allSessions = data.flatMap(d => d.sessions);
+  const allSessions = deduplicateSessions(data);
   const total = allSessions.length;
 
   if (total === 0) {

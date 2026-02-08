@@ -1,4 +1,5 @@
 import { IInsightsDay, ISessionFacet } from '../types/insights';
+import { deduplicateDaySessions } from '../utils/sessions';
 
 export interface ITrendPoint {
   date: string;
@@ -46,7 +47,7 @@ function calculateTrend(points: ITrendPoint[]): { trend: 'increasing' | 'decreas
  * Analyze productivity trends over time
  */
 export function analyzeTrends(data: IInsightsDay[]): ITrendAnalysis {
-  const sortedData = [...data].sort((a, b) => a.date.localeCompare(b.date));
+  const sortedData = [...data].map(deduplicateDaySessions).sort((a, b) => a.date.localeCompare(b.date));
 
   if (sortedData.length === 0) {
     return {

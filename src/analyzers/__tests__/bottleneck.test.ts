@@ -273,6 +273,32 @@ describe('analyzeBottlenecks', () => {
       );
     });
   });
+
+  describe('session deduplication', () => {
+    it('counts duplicate sessions only once across days', () => {
+      const duplicateSession = createSession({ session_id: 'dup-1', outcome: Outcome.FULLY_ACHIEVED });
+      const uniqueSession = createSession({ session_id: 'unique-1', outcome: Outcome.FULLY_ACHIEVED });
+
+      const data: IInsightsDay[] = [
+        { date: '2026-02-06', sessions: [duplicateSession] },
+        { date: '2026-02-07', sessions: [{ ...duplicateSession }, uniqueSession] },
+      ];
+
+      const result = analyzeBottlenecks(data);
+      expect(result.metrics.totalSessions).toBe(2);
+    });
+
+    it('counts duplicate sessions only once within same day', () => {
+      const s1 = createSession({ session_id: 'dup-1' });
+
+      const data: IInsightsDay[] = [
+        { date: '2026-02-07', sessions: [s1, { ...s1 }, createSession({ session_id: 'other' })] },
+      ];
+
+      const result = analyzeBottlenecks(data);
+      expect(result.metrics.totalSessions).toBe(2);
+    });
+  });
 });
 
 describe('analyzeFeatureBottleneck', () => {

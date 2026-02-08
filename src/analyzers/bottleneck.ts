@@ -4,6 +4,7 @@
  */
 
 import { IInsightsDay, ISessionFacet, ICountObject } from '../types/insights';
+import { deduplicateSessions } from '../utils/sessions';
 
 export interface IBottleneckResult {
   summary: string;
@@ -55,7 +56,7 @@ function calculateSeverityScore(session: ISessionFacet): number {
  * Analyze bottlenecks across multiple days of data
  */
 export function analyzeBottlenecks(data: IInsightsDay[]): IBottleneckResult {
-  const allSessions = data.flatMap(d => d.sessions);
+  const allSessions = deduplicateSessions(data);
   const total = allSessions.length;
 
   if (total === 0) {
@@ -170,7 +171,7 @@ export function analyzeBottlenecks(data: IInsightsDay[]): IBottleneckResult {
  * Analyze bottlenecks for a specific feature/keyword
  */
 export function analyzeFeatureBottleneck(data: IInsightsDay[], keyword: string): IBottleneckResult {
-  const allSessions = data.flatMap(d => d.sessions);
+  const allSessions = deduplicateSessions(data);
   const featureSessions = allSessions.filter(s =>
     s.underlying_goal.toLowerCase().includes(keyword.toLowerCase())
   );
@@ -188,7 +189,7 @@ export function getHighSeveritySessions(data: IInsightsDay[], limit: number = 10
   outcome: string;
   severityScore: number;
 }> {
-  const allSessions = data.flatMap(d => d.sessions);
+  const allSessions = deduplicateSessions(data);
 
   return allSessions
     .map(s => ({
