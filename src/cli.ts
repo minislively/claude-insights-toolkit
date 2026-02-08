@@ -36,6 +36,13 @@ import { loadAllSnapshots } from './collectors/snapshot';
 // Import profile
 import { generateProfile, formatProfileText } from './analyzers/profile';
 
+// Import dashboard
+import { startDashboard } from './commands/dashboard';
+
+// Import setup and daemon
+import { runSetup } from './commands/setup';
+import { handleDaemonCommand, DaemonAction } from './commands/daemon';
+
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -742,6 +749,98 @@ program
       }
     } catch (error) {
       spinner.fail(chalk.red('Profile generation failed'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
+/**
+ * Setup command - Auto-configure data collection
+ */
+program
+  .command('setup')
+  .description('Auto-configure data collection (hooks, directories, settings)')
+  .action(async () => {
+    const spinner = ora('Running setup...').start();
+
+    try {
+      const result = await runSetup();
+
+      if (result.success) {
+        spinner.succeed(chalk.green('Setup complete'));
+      } else {
+        spinner.warn(chalk.yellow('Setup completed with warnings'));
+      }
+
+      console.log(chalk.blue('\nSetup Steps:'));
+      result.steps.forEach(step => {
+        console.log(`  ${chalk.green('✓')} ${step}`);
+      });
+
+      if (result.errors.length > 0) {
+        console.log(chalk.red('\nErrors:'));
+        result.errors.forEach(err => {
+          console.log(`  ${chalk.red('✗')} ${err}`);
+        });
+      }
+
+      console.log(chalk.blue('\nNext steps:'));
+      console.log('  • Run: cit collect --all  (gather historical data)');
+      console.log('  • Run: cit daemon start   (start auto-collection)');
+    } catch (error) {
+      spinner.fail(chalk.red('Setup failed'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
+/**
+ * Daemon command - Manage the auto-collection daemon
+ */
+program
+  .command('daemon')
+  .description('Manage the auto-collection file watcher daemon')
+  .argument('<action>', 'start, stop, or status')
+  .action(async (action: string) => {
+    if (!['start', 'stop', 'status'].includes(action)) {
+      console.error(chalk.red(`Unknown action: ${action}`));
+      console.log('Usage: cit daemon <start|stop|status>');
+      process.exit(1);
+    }
+
+    try {
+      await handleDaemonCommand(action as DaemonAction);
+    } catch (error) {
+      console.error(chalk.red('Daemon command failed'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
+/**
+ * Dashboard command - Launch the insights web dashboard
+ */
+program
+  .command('dashboard')
+  .description('Launch the insights web dashboard')
+  .option('-p, --port <number>', 'Port number', '3456')
+  .option('--no-open', 'Do not auto-open browser')
+  .option('--dev', 'Run in dev mode (Vite)')
+  .action(async (options) => {
+    try {
+      await startDashboard({
+        port: parseInt(options.port),
+        open: options.open,
+        dev: options.dev || false,
+      });
+    } catch (error) {
+      console.error(chalk.red('Failed to start dashboard'));
       if (error instanceof Error) {
         console.error(chalk.red(`Error: ${error.message}`));
       }
