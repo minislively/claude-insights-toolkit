@@ -20,7 +20,7 @@ export function DonutChart({ data, height = 300 }: DonutChartProps) {
         </Pie>
         <Tooltip
           contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-          formatter={(value: number, name: string) => [value, name]}
+          formatter={(value, name) => [value as number, name as string]}
         />
         <Legend formatter={(value) => <span style={{ color: '#94a3b8', fontSize: '12px' }}>{value}</span>} />
       </PieChart>

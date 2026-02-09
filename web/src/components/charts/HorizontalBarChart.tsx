@@ -34,7 +34,7 @@ export function HorizontalBarChart({
         <YAxis type="category" dataKey="name" stroke="#94a3b8" tick={{ fontSize: 12 }} width={leftMargin - 10} />
         <Tooltip
           contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-          formatter={(value: number, name: string) => [valueFormatter ? valueFormatter(value) : value, name === valueKey ? 'Count' : 'Success Rate']}
+          formatter={(value, name) => [valueFormatter ? valueFormatter(value as number) : value, name === valueKey ? 'Count' : 'Success Rate']}
         />
         <Bar dataKey={valueKey} fill={color} radius={[0, 4, 4, 0]} />
         {hasSecondary && (

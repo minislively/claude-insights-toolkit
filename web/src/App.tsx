@@ -7,6 +7,11 @@ import { TrendsPage } from '@/pages/TrendsPage'
 import { ReportsPage } from '@/pages/ReportsPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { HistoryPage } from '@/pages/HistoryPage'
+import { ApiErrorsPage } from '@/pages/ApiErrorsPage'
+import { CategorySuccessPage } from '@/pages/CategorySuccessPage'
+import { SessionEfficiencyPage } from '@/pages/SessionEfficiencyPage'
+import { HelpfulnessPage } from '@/pages/HelpfulnessPage'
+import { TimePatternsPage } from '@/pages/TimePatternsPage'
 
 function App() {
   return (
@@ -20,6 +25,11 @@ function App() {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="history" element={<HistoryPage />} />
+          <Route path="api-errors" element={<ApiErrorsPage />} />
+          <Route path="category-success" element={<CategorySuccessPage />} />
+          <Route path="session-efficiency" element={<SessionEfficiencyPage />} />
+          <Route path="helpfulness" element={<HelpfulnessPage />} />
+          <Route path="time-patterns" element={<TimePatternsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

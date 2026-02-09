@@ -18,7 +18,7 @@ export function TrendLineChart({ data, color = '#6366f1', label = 'Value', heigh
         <Tooltip
           contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
           labelFormatter={(l) => `Date: ${l}`}
-          formatter={(value: number) => [valueFormatter ? valueFormatter(value) : value, label]}
+          formatter={(value) => [valueFormatter ? valueFormatter(value as number) : value, label]}
         />
         <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={{ fill: color, r: 3 }} activeDot={{ r: 5 }} />
       </LineChart>
