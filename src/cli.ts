@@ -28,6 +28,7 @@ import { sync, pull, push, addRemote, removeRemote, listRemotes, getDeviceId } f
 
 // Import generators
 import { generateClaudeMdSuggestions, formatSuggestionsAsMarkdown, generateSuggestionSummary } from './generators/claude-md';
+import { generateAdvancedAdvisories, formatAdvisoriesAsMarkdown, generateAdvisorySummary } from './generators/claude-md-advanced';
 
 // Import parsers
 import { loadLatestReport } from './parsers/report-html';
@@ -816,6 +817,158 @@ program
       await handleDaemonCommand(action as DaemonAction);
     } catch (error) {
       console.error(chalk.red('Daemon command failed'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
+/**
+ * Patterns command - Extract and display workflow patterns
+ */
+program
+  .command('patterns')
+  .description('Extract successful workflow patterns from your sessions')
+  .option('-d, --days <number>', 'Number of days to analyze', '30')
+  .option('-g, --goal <keyword>', 'Find patterns for specific goal')
+  .option('-o, --output <format>', 'Output format (text|json)', 'text')
+  .action(async (options) => {
+    const spinner = ora('Extracting patterns...').start();
+
+    try {
+      const { extractPatterns, getRecommendedPatterns } = await import('./analyzers/pattern-extractor');
+      const data = await loadStoredData({ days: parseInt(options.days) });
+
+      if (data.length === 0) {
+        spinner.warn(chalk.yellow('No data found. Run `cit collect` first.'));
+        return;
+      }
+
+      const result = extractPatterns(data);
+      spinner.succeed(chalk.green('Patterns extracted'));
+
+      if (options.goal) {
+        const matches = getRecommendedPatterns(options.goal, result.patterns);
+        console.log(chalk.bold(`\n🔍 Patterns for "${options.goal}"`));
+        console.log(chalk.gray('━'.repeat(50)));
+
+        if (matches.length === 0) {
+          console.log(chalk.yellow('No matching patterns found.'));
+        } else {
+          matches.slice(0, 5).forEach((match, i) => {
+            const p = match.pattern;
+            console.log(`\n  ${i + 1}. ${chalk.bold(p.name)} ${chalk.gray(`(${match.relevanceScore}% match)`)}`);
+            console.log(`     ${p.description}`);
+            console.log(`     Success rate: ${chalk.green(p.successRate + '%')} | Confidence: ${chalk.blue(Math.round(p.confidence * 100) + '%')}`);
+            console.log(`     Why: ${match.matchReason}`);
+          });
+        }
+      } else {
+        console.log(chalk.bold('\n📊 Pattern Extraction Results'));
+        console.log(chalk.gray('━'.repeat(50)));
+        console.log(`\n  Total patterns: ${chalk.bold(result.statistics.totalPatterns)}`);
+        console.log(`  High confidence: ${chalk.bold(result.statistics.highConfidencePatterns)}`);
+        console.log(`  Overall success rate: ${chalk.bold(result.statistics.overallSuccessRate + '%')}`);
+
+        if (result.topPatterns.length > 0) {
+          console.log(chalk.bold('\n🏆 Top Patterns:'));
+          result.topPatterns.slice(0, 5).forEach((p, i) => {
+            console.log(`  ${i + 1}. ${p.name} ${chalk.gray(`(${p.effectivenessScore} effectiveness)`)}`);
+          });
+        }
+
+        if (result.insights.length > 0) {
+          console.log(chalk.bold('\n💡 Insights:'));
+          result.insights.slice(0, 3).forEach(insight => {
+            const icon = insight.type === 'success_factor' ? '✓' :
+                         insight.type === 'avoidance' ? '⚠' :
+                         insight.type === 'correlation' ? '↔' : '→';
+            console.log(`  ${icon} ${insight.title}`);
+          });
+        }
+      }
+
+      if (options.output === 'json') {
+        console.log('\n' + JSON.stringify(result, null, 2));
+      }
+    } catch (error) {
+      spinner.fail(chalk.red('Pattern extraction failed'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
+/**
+ * Power command - Display power user analytics
+ */
+program
+  .command('power')
+  .description('Show power user analytics and efficiency metrics')
+  .option('-d, --days <number>', 'Number of days to analyze', '30')
+  .option('-o, --output <format>', 'Output format (text|json)', 'text')
+  .option('--insights', 'Show actionable insights only')
+  .action(async (options) => {
+    const spinner = ora('Analyzing power user metrics...').start();
+
+    try {
+      const { analyzePowerUserMetrics, generateEfficiencyReport, getProductivityInsights } = await import('./analyzers/power-user');
+      const data = await loadStoredData({ days: parseInt(options.days) });
+
+      if (data.length === 0) {
+        spinner.warn(chalk.yellow('No data found. Run `cit collect` first.'));
+        return;
+      }
+
+      const metrics = analyzePowerUserMetrics(data);
+      spinner.succeed(chalk.green('Analysis complete'));
+
+      if (options.insights) {
+        const insights = getProductivityInsights(metrics);
+        console.log(chalk.bold('\n💡 Actionable Insights'));
+        console.log(chalk.gray('━'.repeat(50)));
+
+        const strengths = insights.filter(i => i.type === 'strength');
+        const weaknesses = insights.filter(i => i.type === 'weakness');
+        const opportunities = insights.filter(i => i.type === 'opportunity');
+
+        if (strengths.length > 0) {
+          console.log(chalk.green('\n  Strengths:'));
+          strengths.forEach(i => {
+            console.log(`    ✓ ${i.title}: ${i.description}`);
+          });
+        }
+
+        if (weaknesses.length > 0) {
+          console.log(chalk.red('\n  Areas for Improvement:'));
+          weaknesses.forEach(i => {
+            console.log(`    ⚠ ${i.title}: ${i.description}`);
+            if (i.recommendation) {
+              console.log(`      → ${i.recommendation}`);
+            }
+          });
+        }
+
+        if (opportunities.length > 0) {
+          console.log(chalk.blue('\n  Opportunities:'));
+          opportunities.forEach(i => {
+            console.log(`    ◆ ${i.title}: ${i.description}`);
+            if (i.recommendation) {
+              console.log(`      → ${i.recommendation}`);
+            }
+          });
+        }
+      } else {
+        console.log(generateEfficiencyReport(metrics));
+      }
+
+      if (options.output === 'json') {
+        console.log('\n' + JSON.stringify(metrics, null, 2));
+      }
+    } catch (error) {
+      spinner.fail(chalk.red('Power user analysis failed'));
       if (error instanceof Error) {
         console.error(chalk.red(`Error: ${error.message}`));
       }

@@ -11,3 +11,4 @@ export * from './helpfulness-correlation';
 export * from './time-patterns';
 export * from './session-efficiency';
 export * from './pattern-extractor';
+export * from './power-user';
