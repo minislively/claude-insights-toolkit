@@ -211,6 +211,13 @@ export interface IClaudeMdSuggestion {
 /**
  * Snapshot key metrics extracted from report.html
  */
+export interface ICostKpi {
+  estimatedTokens: number;
+  estimatedCostUsd: number;
+  estimationModel: string;
+  assumptions: string[];
+}
+
 export interface ISnapshotKeyMetrics {
   sessions: number;
   messages: number;
@@ -223,6 +230,7 @@ export interface ISnapshotKeyMetrics {
   primaryLanguage: string;
   dateRangeStart: string; // YYYY-MM-DD
   dateRangeEnd: string; // YYYY-MM-DD
+  costKpi?: ICostKpi;
 }
 
 /**

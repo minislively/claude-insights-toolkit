@@ -15,12 +15,14 @@ const INSIGHTS_DIR = path.join(homedir(), 'claude-insights');
 const CLAUDE_DIR = path.join(homedir(), '.claude');
 const HOOKS_DIR = path.join(CLAUDE_DIR, 'hooks');
 const HOOK_SCRIPT = path.join(HOOKS_DIR, 'cit-auto-collect.js');
+const LEGACY_HOOK_SCRIPT = path.join(HOOKS_DIR, 'insights-auto-collect.sh');
 const SETTINGS_FILE = path.join(CLAUDE_DIR, 'settings.json');
 
 interface ISetupResult {
   success: boolean;
   steps: string[];
   errors: string[];
+  warnings: string[];
 }
 
 /**
@@ -55,6 +57,7 @@ try {
 export async function runSetup(): Promise<ISetupResult> {
   const steps: string[] = [];
   const errors: string[] = [];
+  const warnings: string[] = [];
 
   // Step 1: Detect platform
   const platform = process.platform;
@@ -87,6 +90,12 @@ export async function runSetup(): Promise<ISetupResult> {
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     errors.push(`Failed to install hook: ${msg}`);
+  }
+
+  if (fs.existsSync(LEGACY_HOOK_SCRIPT)) {
+    warnings.push(
+      `Legacy hook detected: ${LEGACY_HOOK_SCRIPT} (possible duplicate collection trigger)`
+    );
   }
 
   // Step 4: Update settings.json
@@ -159,5 +168,6 @@ export async function runSetup(): Promise<ISetupResult> {
     success: errors.length === 0,
     steps,
     errors,
+    warnings,
   };
 }

@@ -13,8 +13,79 @@ const execAsync = promisify(exec);
 
 const INSIGHTS_DIR = path.join(homedir(), 'claude-insights');
 
+export type SyncErrorCode = 'NO_REMOTE' | 'PULL_CONFLICT' | 'PUSH_REJECTED' | 'AUTH' | 'UNKNOWN';
+
+export interface ISyncError {
+  errorCode: SyncErrorCode;
+  message: string;
+  actionHint: string;
+}
+
+export interface ISyncResult {
+  committed: boolean;
+  pulled: boolean;
+  pushed: boolean;
+  error?: ISyncError;
+}
+
 function getGit(): SimpleGit {
   return simpleGit(INSIGHTS_DIR);
+}
+
+function makeSyncError(errorCode: SyncErrorCode, message: string, actionHint: string): ISyncError {
+  return { errorCode, message, actionHint };
+}
+
+export function classifySyncError(error: unknown, phase: 'pull' | 'push' | 'preflight'): ISyncError {
+  const message = error instanceof Error ? error.message : String(error || 'unknown');
+  const normalized = message.toLowerCase();
+
+  if (
+    normalized.includes('authentication failed') ||
+    normalized.includes('could not read username') ||
+    normalized.includes('permission denied') ||
+    normalized.includes('repository not found')
+  ) {
+    return makeSyncError('AUTH', message, 'Run `gh auth login` or update git credentials, then retry `cit sync`.');
+  }
+
+  if (
+    phase === 'pull' &&
+    (normalized.includes('conflict') ||
+      normalized.includes('please commit your changes') ||
+      normalized.includes('automatic merge failed'))
+  ) {
+    return makeSyncError('PULL_CONFLICT', message, 'Resolve local merge conflicts, commit, then run `cit sync` again.');
+  }
+
+  if (
+    phase === 'push' &&
+    (normalized.includes('non-fast-forward') ||
+      normalized.includes('[rejected]') ||
+      normalized.includes('fetch first'))
+  ) {
+    return makeSyncError('PUSH_REJECTED', message, 'Run `cit pull`, resolve any conflicts, then run `cit sync`.');
+  }
+
+  return makeSyncError('UNKNOWN', message, 'Check git status and remote connectivity, then retry `cit sync`.');
+}
+
+async function resolveRemoteBranch(git: SimpleGit): Promise<'main' | 'master' | null> {
+  try {
+    const mainHeads = await git.listRemote(['--heads', 'origin', 'main']);
+    if (mainHeads.includes('refs/heads/main')) {
+      return 'main';
+    }
+
+    const masterHeads = await git.listRemote(['--heads', 'origin', 'master']);
+    if (masterHeads.includes('refs/heads/master')) {
+      return 'master';
+    }
+
+    return null;
+  } catch (error) {
+    throw classifySyncError(error, 'preflight');
+  }
 }
 
 export async function ensureGitRepo(): Promise<boolean> {
@@ -63,42 +134,55 @@ async function autoCommit(): Promise<boolean> {
   return true;
 }
 
-export async function sync(): Promise<{ committed: boolean; pulled: boolean; pushed: boolean; error?: string }> {
+export async function sync(): Promise<ISyncResult> {
   await ensureGitRepo();
   const git = getGit();
-  const result = { committed: false, pulled: false, pushed: false, error: undefined as string | undefined };
+  const result: ISyncResult = { committed: false, pulled: false, pushed: false };
 
   const remotes = await git.getRemotes(true);
-  if (remotes.length === 0) {
-    result.error = 'No remote configured. Run: cit remote add <url>';
+  if (!remotes.some((r) => r.name === 'origin')) {
+    result.error = makeSyncError(
+      'NO_REMOTE',
+      'No remote configured.',
+      'Run `cit remote add <url>` to configure origin, then retry `cit sync`.',
+    );
+    return result;
+  }
+
+  let remoteBranch: 'main' | 'master' | null = null;
+  try {
+    remoteBranch = await resolveRemoteBranch(git);
+  } catch (error) {
+    result.error = (error as ISyncError).errorCode
+      ? (error as ISyncError)
+      : classifySyncError(error, 'preflight');
+    return result;
+  }
+
+  if (!remoteBranch) {
+    result.error = makeSyncError(
+      'NO_REMOTE',
+      'Remote origin has no main/master branch.',
+      'Push an initial branch (main or master), then run `cit sync`.',
+    );
     return result;
   }
 
   result.committed = await autoCommit();
 
   try {
-    await git.pull('origin', 'main', { '--no-edit': null });
+    await git.pull('origin', remoteBranch, { '--no-edit': null });
     result.pulled = true;
-  } catch {
-    try {
-      await git.pull('origin', 'master', { '--no-edit': null });
-      result.pulled = true;
-    } catch (e: any) {
-      result.error = 'Pull failed: ' + (e.message || 'unknown');
-      return result;
-    }
+  } catch (error) {
+    result.error = classifySyncError(error, 'pull');
+    return result;
   }
 
   try {
-    await git.push('origin', 'main');
+    await git.push('origin', remoteBranch);
     result.pushed = true;
-  } catch {
-    try {
-      await git.push('origin', 'master');
-      result.pushed = true;
-    } catch (e: any) {
-      result.error = 'Push failed: ' + (e.message || 'unknown');
-    }
+  } catch (error) {
+    result.error = classifySyncError(error, 'push');
   }
 
   return result;

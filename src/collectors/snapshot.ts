@@ -6,11 +6,51 @@ import {
   ISnapshotAnomaly,
   ISnapshotDelta,
   ISnapshot,
+  ICostKpi,
 } from '../types/insights';
 import { IReportData } from '../parsers/report-html';
 import { parseReportHtml } from '../parsers/report-html';
 
 const SNAPSHOTS_PATH = path.join(homedir(), 'claude-insights', 'snapshots');
+
+const DEFAULT_TOKENS_PER_MESSAGE = 180;
+const DEFAULT_COST_PER_1K_TOKENS_USD = 0.003;
+const DEFAULT_ESTIMATION_MODEL = 'claude-estimate-v1';
+
+function parseEnvNumber(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) {
+    return fallback;
+  }
+
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function estimateCostKpi(messages: number): ICostKpi {
+  const tokensPerMessage = parseEnvNumber(
+    'CIT_ESTIMATE_TOKENS_PER_MESSAGE',
+    DEFAULT_TOKENS_PER_MESSAGE,
+  );
+  const costPer1kTokensUsd = parseEnvNumber(
+    'CIT_ESTIMATE_COST_PER_1K_TOKENS_USD',
+    DEFAULT_COST_PER_1K_TOKENS_USD,
+  );
+  const estimationModel = process.env.CIT_ESTIMATE_MODEL || DEFAULT_ESTIMATION_MODEL;
+
+  const estimatedTokens = Math.round(messages * tokensPerMessage);
+  const estimatedCostUsd = Number(((estimatedTokens / 1000) * costPer1kTokensUsd).toFixed(4));
+
+  return {
+    estimatedTokens,
+    estimatedCostUsd,
+    estimationModel,
+    assumptions: [
+      `messages × ${tokensPerMessage} tokens/message`,
+      `$${costPer1kTokensUsd} per 1K tokens`,
+    ],
+  };
+}
 
 /**
  * Extract key metrics from parsed report data
@@ -60,6 +100,7 @@ export function extractKeyMetrics(reportData: IReportData): ISnapshotKeyMetrics 
     primaryLanguage,
     dateRangeStart: reportData.dateRange.start,
     dateRangeEnd: reportData.dateRange.end,
+    costKpi: estimateCostKpi(stats.messages),
   };
 }
 

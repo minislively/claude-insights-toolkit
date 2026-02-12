@@ -5,12 +5,15 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { homedir } from 'os';
-import { IInsightsDay, ISessionFacet } from '../types/insights';
+import { IInsightsDay, ISessionFacet, ICostKpi } from '../types/insights';
+import { deduplicateDaySessions } from '../utils/sessions';
 
 const FACETS_PATH = path.join(homedir(), '.claude', 'usage-data', 'facets');
 const REPORT_PATH = path.join(homedir(), '.claude', 'usage-data', 'report.html');
 const DEFAULT_OUTPUT_PATH = path.join(homedir(), 'claude-insights', 'data');
 const REPORTS_OUTPUT_PATH = path.join(homedir(), 'claude-insights', 'reports');
+const LOCK_DIR = path.join(homedir(), 'claude-insights', '.locks');
+const FACETS_COLLECT_LOCK = path.join(LOCK_DIR, 'collect-facets.lock');
 
 export interface ICollectOptions {
   date?: string; // YYYY-MM-DD format, defaults to today
@@ -26,6 +29,9 @@ export interface ICollectResult {
   reportPath?: string;
   snapshotCreated: boolean;
   snapshotPath?: string;
+  estimatedCostKpi?: ICostKpi;
+  skipped?: boolean;
+  skipReason?: string;
 }
 
 /**
@@ -104,6 +110,31 @@ async function copyReportHtml(date: string): Promise<{ copied: boolean; path?: s
   }
 }
 
+async function acquireCollectLock(): Promise<boolean> {
+  await fs.mkdir(LOCK_DIR, { recursive: true });
+
+  try {
+    const handle = await fs.open(FACETS_COLLECT_LOCK, 'wx');
+    await handle.close();
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function releaseCollectLock(): Promise<void> {
+  try {
+    await fs.unlink(FACETS_COLLECT_LOCK);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error;
+    }
+  }
+}
+
 /**
  * Collect insights data from Claude Code facets
  */
@@ -111,58 +142,80 @@ export async function collectFacets(options: ICollectOptions = {}): Promise<ICol
   const outputPath = options.outputPath || DEFAULT_OUTPUT_PATH;
   const targetDate = options.date || getToday();
 
-  const dateMap = await readFacetFiles();
-  const datesProcessed: string[] = [];
-  let totalSessions = 0;
-
-  if (options.collectAll) {
-    // Process all available dates
-    for (const [date, sessions] of Array.from(dateMap.entries())) {
-      await saveDailyData(date, sessions, outputPath);
-      datesProcessed.push(date);
-      totalSessions += sessions.length;
-    }
-  } else {
-    // Process only the target date
-    const sessions = dateMap.get(targetDate) || [];
-    if (sessions.length > 0) {
-      await saveDailyData(targetDate, sessions, outputPath);
-      datesProcessed.push(targetDate);
-      totalSessions = sessions.length;
-    }
+  const lockAcquired = await acquireCollectLock();
+  if (!lockAcquired) {
+    return {
+      sessionsCollected: 0,
+      datesProcessed: [],
+      storagePath: outputPath,
+      reportCopied: false,
+      snapshotCreated: false,
+      skipped: true,
+      skipReason: 'Collection skipped: another collect process is already running',
+    };
   }
 
-  // Copy report.html if available
-  const reportResult = await copyReportHtml(targetDate);
+  try {
+    const dateMap = await readFacetFiles();
+    const datesProcessed: string[] = [];
+    let totalSessions = 0;
 
-  // Create snapshot from report if available
-  let snapshotCreated = false;
-  let snapshotPath: string | undefined;
-
-  if (reportResult.copied && reportResult.path) {
-    try {
-      const { createSnapshot } = await import('./snapshot');
-      const snapshotResult = await createSnapshot(
-        reportResult.path,
-        totalSessions,
-        targetDate,
-      );
-      snapshotCreated = true;
-      snapshotPath = snapshotResult.path;
-    } catch (error) {
-      console.warn('Warning: Failed to create snapshot:', error instanceof Error ? error.message : error);
+    if (options.collectAll) {
+      // Process all available dates
+      for (const [date, sessions] of Array.from(dateMap.entries())) {
+        const dedupedDay = deduplicateDaySessions({ date, sessions });
+        await saveDailyData(date, dedupedDay.sessions, outputPath);
+        datesProcessed.push(date);
+        totalSessions += dedupedDay.sessions.length;
+      }
+    } else {
+      // Process only the target date
+      const sessions = dateMap.get(targetDate) || [];
+      if (sessions.length > 0) {
+        const dedupedDay = deduplicateDaySessions({ date: targetDate, sessions });
+        await saveDailyData(targetDate, dedupedDay.sessions, outputPath);
+        datesProcessed.push(targetDate);
+        totalSessions = dedupedDay.sessions.length;
+      }
     }
-  }
 
-  return {
-    sessionsCollected: totalSessions,
-    datesProcessed,
-    storagePath: outputPath,
-    reportCopied: reportResult.copied,
-    reportPath: reportResult.path,
-    snapshotCreated,
-    snapshotPath,
-  };
+    // Copy report.html if available
+    const reportResult = await copyReportHtml(targetDate);
+
+    // Create snapshot from report if available
+    let snapshotCreated = false;
+    let snapshotPath: string | undefined;
+    let estimatedCostKpi: ICostKpi | undefined;
+
+    if (reportResult.copied && reportResult.path) {
+      try {
+        const { createSnapshot } = await import('./snapshot');
+        const snapshotResult = await createSnapshot(
+          reportResult.path,
+          totalSessions,
+          targetDate,
+        );
+        snapshotCreated = true;
+        snapshotPath = snapshotResult.path;
+        estimatedCostKpi = snapshotResult.snapshot.metrics.costKpi;
+      } catch (error) {
+        console.warn('Warning: Failed to create snapshot:', error instanceof Error ? error.message : error);
+      }
+    }
+
+    return {
+      sessionsCollected: totalSessions,
+      datesProcessed,
+      storagePath: outputPath,
+      reportCopied: reportResult.copied,
+      reportPath: reportResult.path,
+      snapshotCreated,
+      snapshotPath,
+      estimatedCostKpi,
+    };
+  } finally {
+    await releaseCollectLock();
+  }
 }
 
 /**

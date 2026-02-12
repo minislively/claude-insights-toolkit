@@ -42,6 +42,7 @@ import { startDashboard } from './commands/dashboard';
 
 // Import setup and daemon
 import { runSetup } from './commands/setup';
+import { runHealthCheck } from './commands/health';
 import { handleDaemonCommand, DaemonAction } from './commands/daemon';
 
 import * as fs from 'fs/promises';
@@ -84,6 +85,13 @@ program
       }
       if (result.snapshotCreated && result.snapshotPath) {
         console.log(`  • Snapshot saved: ${chalk.bold(path.basename(result.snapshotPath))}`);
+      }
+      if (result.skipped && result.skipReason) {
+        console.log(`  • Collection status: ${chalk.yellow('skipped')} (${result.skipReason})`);
+      }
+      if (result.estimatedCostKpi) {
+        console.log(`  • Estimated tokens: ${chalk.bold(result.estimatedCostKpi.estimatedTokens.toLocaleString())} ${chalk.gray('(estimate)')}`);
+        console.log(`  • Estimated cost: ${chalk.bold(`$${result.estimatedCostKpi.estimatedCostUsd.toFixed(4)}`)} ${chalk.gray(`(estimate, model: ${result.estimatedCostKpi.estimationModel})`)}`);
       }
     } catch (error) {
       spinner.fail(chalk.red('Failed to collect insights'));
@@ -400,7 +408,19 @@ program
 
       if (result.error) {
         spinner.fail(chalk.red('Sync failed'));
-        console.error(chalk.red(result.error));
+        console.error(chalk.red(`[${result.error.errorCode}] ${result.error.message}`));
+        console.log(chalk.yellow(`Action: ${result.error.actionHint}`));
+
+        if (result.error.errorCode === 'NO_REMOTE') {
+          console.log(chalk.gray('Hint: configure with `cit remote add <url>`.'));
+        } else if (result.error.errorCode === 'PULL_CONFLICT') {
+          console.log(chalk.gray('Hint: inspect conflicts with `git -C ~/claude-insights status`.'));
+        } else if (result.error.errorCode === 'PUSH_REJECTED') {
+          console.log(chalk.gray('Hint: pull latest changes before pushing again.'));
+        } else if (result.error.errorCode === 'AUTH') {
+          console.log(chalk.gray('Hint: re-authenticate Git/GitHub credentials.'));
+        }
+
         process.exit(1);
       }
 
@@ -670,6 +690,13 @@ program
       const last = snapshots[snapshots.length - 1];
       console.log(chalk.gray('\n  ' + '─'.repeat(86)));
       console.log(`  Period: ${chalk.bold(first.date)} → ${chalk.bold(last.date)} (${chalk.bold(snapshots.length)} snapshots)`);
+      const latestCostKpi = display[0]?.metrics.costKpi;
+      if (latestCostKpi) {
+        console.log(`  Latest estimated tokens: ${chalk.bold(latestCostKpi.estimatedTokens.toLocaleString())} ${chalk.gray('(estimate)')}`);
+        console.log(`  Latest estimated cost: ${chalk.bold(`$${latestCostKpi.estimatedCostUsd.toFixed(4)}`)} ${chalk.gray(`(estimate, model: ${latestCostKpi.estimationModel})`)}`);
+      } else {
+        console.log(`  Latest estimated cost: ${chalk.gray('not available (estimate)')}`);
+      }
 
       // Show anomalies if any recent ones
       const recentAnomalies = display
@@ -769,7 +796,7 @@ program
     try {
       const result = await runSetup();
 
-      if (result.success) {
+      if (result.success && result.warnings.length === 0) {
         spinner.succeed(chalk.green('Setup complete'));
       } else {
         spinner.warn(chalk.yellow('Setup completed with warnings'));
@@ -779,6 +806,13 @@ program
       result.steps.forEach(step => {
         console.log(`  ${chalk.green('✓')} ${step}`);
       });
+
+      if (result.warnings.length > 0) {
+        console.log(chalk.yellow('\nWarnings:'));
+        result.warnings.forEach(warn => {
+          console.log(`  ${chalk.yellow('!')} ${warn}`);
+        });
+      }
 
       if (result.errors.length > 0) {
         console.log(chalk.red('\nErrors:'));
@@ -802,6 +836,26 @@ program
 /**
  * Daemon command - Manage the auto-collection daemon
  */
+program
+  .command('health')
+  .description('Run health checks for collection and sync prerequisites')
+  .action(async () => {
+    const result = await runHealthCheck();
+
+    console.log(chalk.bold('\n🏥 Claude Insights Health'));
+    console.log(chalk.gray('━'.repeat(50)));
+
+    for (const check of result.checks) {
+      const color = check.status === 'PASS' ? chalk.green : check.status === 'WARN' ? chalk.yellow : chalk.red;
+      console.log(`  ${color(check.status.padEnd(4))} ${check.name}: ${check.details}`);
+    }
+
+    console.log(chalk.blue(`\nOverall: ${result.status}`));
+    if (result.status === 'FAIL') {
+      process.exit(1);
+    }
+  });
+
 program
   .command('daemon')
   .description('Manage the auto-collection file watcher daemon')

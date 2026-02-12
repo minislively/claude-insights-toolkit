@@ -108,6 +108,12 @@ describe('extractKeyMetrics', () => {
     expect(metrics.files).toBe(100);
     expect(metrics.dateRangeStart).toBe('2025-01-01');
     expect(metrics.dateRangeEnd).toBe('2025-01-31');
+    expect(metrics.costKpi).toEqual({
+      estimatedTokens: 180000,
+      estimatedCostUsd: 0.54,
+      estimationModel: 'claude-estimate-v1',
+      assumptions: ['messages × 180 tokens/message', '$0.003 per 1K tokens'],
+    });
   });
 
   it('calculates success rate from outcome chart', () => {
@@ -123,6 +129,26 @@ describe('extractKeyMetrics', () => {
     const metrics = extractKeyMetrics(reportData);
 
     expect(metrics.primaryLanguage).toBe('TypeScript');
+  });
+
+  it('applies env overrides for cost estimation', () => {
+    process.env.CIT_ESTIMATE_TOKENS_PER_MESSAGE = '250';
+    process.env.CIT_ESTIMATE_COST_PER_1K_TOKENS_USD = '0.01';
+    process.env.CIT_ESTIMATE_MODEL = 'custom-model';
+
+    const reportData = createMockReportData();
+    const metrics = extractKeyMetrics(reportData);
+
+    expect(metrics.costKpi).toEqual({
+      estimatedTokens: 250000,
+      estimatedCostUsd: 2.5,
+      estimationModel: 'custom-model',
+      assumptions: ['messages × 250 tokens/message', '$0.01 per 1K tokens'],
+    });
+
+    delete process.env.CIT_ESTIMATE_TOKENS_PER_MESSAGE;
+    delete process.env.CIT_ESTIMATE_COST_PER_1K_TOKENS_USD;
+    delete process.env.CIT_ESTIMATE_MODEL;
   });
 
   it('returns 0 success rate when no outcome chart', () => {
