@@ -1,4 +1,4 @@
-import { deduplicateSessions, deduplicateDaySessions } from '../sessions';
+import { deduplicateSessions, deduplicateDaySessions, calculateDeduplicationStats } from '../sessions';
 import { IInsightsDay, ISessionFacet, Outcome, ClaudeHelpfulness, SessionType, PrimarySuccess } from '../../types/insights';
 
 function createSession(overrides: Partial<ISessionFacet> = {}): ISessionFacet {
@@ -114,5 +114,68 @@ describe('deduplicateDaySessions', () => {
     const result = deduplicateDaySessions(day);
     expect(day.sessions).toHaveLength(2);
     expect(result.sessions).toHaveLength(1);
+  });
+});
+
+describe('calculateDeduplicationStats', () => {
+  it('returns zero stats for empty data', () => {
+    const stats = calculateDeduplicationStats([]);
+    expect(stats).toEqual({
+      totalSessions: 0,
+      uniqueSessions: 0,
+      duplicatesRemoved: 0,
+      duplicationRate: 0,
+    });
+  });
+
+  it('returns zero duplication rate when all sessions are unique', () => {
+    const s1 = createSession({ session_id: 'a' });
+    const s2 = createSession({ session_id: 'b' });
+    const s3 = createSession({ session_id: 'c' });
+
+    const data: IInsightsDay[] = [
+      { date: '2026-02-01', sessions: [s1, s2] },
+      { date: '2026-02-02', sessions: [s3] },
+    ];
+
+    const stats = calculateDeduplicationStats(data);
+    expect(stats.totalSessions).toBe(3);
+    expect(stats.uniqueSessions).toBe(3);
+    expect(stats.duplicatesRemoved).toBe(0);
+    expect(stats.duplicationRate).toBe(0);
+  });
+
+  it('calculates correct stats when duplicates exist', () => {
+    const s1 = createSession({ session_id: 'dup' });
+    const s2 = createSession({ session_id: 'dup' });
+    const s3 = createSession({ session_id: 'dup' });
+    const s4 = createSession({ session_id: 'unique' });
+
+    const data: IInsightsDay[] = [
+      { date: '2026-02-01', sessions: [s1, s2] },
+      { date: '2026-02-02', sessions: [s3, s4] },
+    ];
+
+    const stats = calculateDeduplicationStats(data);
+    expect(stats.totalSessions).toBe(4);
+    expect(stats.uniqueSessions).toBe(2);
+    expect(stats.duplicatesRemoved).toBe(2);
+    expect(stats.duplicationRate).toBe(50); // 2/4 = 50%
+  });
+
+  it('rounds duplication rate to 2 decimal places', () => {
+    const s1 = createSession({ session_id: 'a' });
+    const s2 = createSession({ session_id: 'b' });
+    const s3 = createSession({ session_id: 'b' });
+
+    const data: IInsightsDay[] = [
+      { date: '2026-02-01', sessions: [s1, s2, s3] },
+    ];
+
+    const stats = calculateDeduplicationStats(data);
+    expect(stats.totalSessions).toBe(3);
+    expect(stats.uniqueSessions).toBe(2);
+    expect(stats.duplicatesRemoved).toBe(1);
+    expect(stats.duplicationRate).toBe(33.33); // 1/3 = 33.33%
   });
 });

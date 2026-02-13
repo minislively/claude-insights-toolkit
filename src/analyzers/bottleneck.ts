@@ -3,12 +3,13 @@
  * Based on jq queries from scientist research
  */
 
-import { IInsightsDay, ISessionFacet, ICountObject } from '../types/insights';
-import { deduplicateSessions } from '../utils/sessions';
+import { IInsightsDay, ISessionFacet, ICountObject, IDeduplicationStats } from '../types/insights';
+import { deduplicateSessions, calculateDeduplicationStats } from '../utils/sessions';
 
 export interface IBottleneckResult {
   summary: string;
   generatedAt: string;
+  deduplicationStats?: IDeduplicationStats;
   metrics: {
     totalSessions: number;
     successRate: number;
@@ -56,6 +57,7 @@ function calculateSeverityScore(session: ISessionFacet): number {
  * Analyze bottlenecks across multiple days of data
  */
 export function analyzeBottlenecks(data: IInsightsDay[]): IBottleneckResult {
+  const dedupStats = calculateDeduplicationStats(data);
   const allSessions = deduplicateSessions(data);
   const total = allSessions.length;
 
@@ -63,6 +65,7 @@ export function analyzeBottlenecks(data: IInsightsDay[]): IBottleneckResult {
     return {
       summary: 'No sessions to analyze',
       generatedAt: new Date().toISOString(),
+      deduplicationStats: dedupStats,
       metrics: { totalSessions: 0, successRate: 0, apiBlockedRate: 0, wrongApproachRate: 0, contextOverflowRate: 0 },
       patterns: [],
       recommendations: [],
@@ -161,6 +164,7 @@ export function analyzeBottlenecks(data: IInsightsDay[]): IBottleneckResult {
   return {
     summary,
     generatedAt: new Date().toISOString(),
+    deduplicationStats: dedupStats,
     metrics,
     patterns,
     recommendations,

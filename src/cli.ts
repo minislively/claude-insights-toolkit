@@ -131,6 +131,17 @@ program
       console.log(chalk.bold('\n🔍 Bottleneck Analysis'));
       console.log(chalk.gray('━'.repeat(50)));
 
+      // Show deduplication stats if available
+      if (analysis.deduplicationStats) {
+        const stats = analysis.deduplicationStats;
+        console.log('\n🔄 DEDUPLICATION:');
+        console.log(`  • Total sessions: ${chalk.bold(stats.totalSessions)}`);
+        console.log(`  • Unique sessions: ${chalk.bold(stats.uniqueSessions)} ${chalk.green('(' + stats.duplicatesRemoved + ' duplicates removed)')}`);
+        if (stats.duplicationRate > 0) {
+          console.log(`  • Duplication rate: ${chalk.bold(stats.duplicationRate + '%')}`);
+        }
+      }
+
       console.log('\n📊 METRICS:');
       console.log(`  • Total sessions: ${chalk.bold(analysis.metrics.totalSessions)}`);
       console.log(`  • Success rate: ${chalk.bold(analysis.metrics.successRate + '%')}`);
