@@ -86,16 +86,6 @@ Claude Code /insights → ~/.claude/usage-data/facets/ → 7일 후 자동 삭�
                     ~/claude-insights/data/ (영구 저장)
 ```
 
-### 미구현 코드 발견
-
-```typescript
-// src/utils/storage.ts
-export async function initStorage() {
-  // TODO: Implement
-  throw new Error('initStorage not yet implemented');
-}
-```
-
 ### 자동 수집 대안 비교 분석
 
 | 방식 | 종합 점수 | 즉시성 | 크로스 플랫폼 | 사용자 마찰 | 구현 복잡도 |

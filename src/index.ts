@@ -21,5 +21,4 @@ export * from './types/insights';
 // export * from './generators/claude-md';
 
 // Utility exports
-// TODO: Uncomment when implemented
-// export * from './utils/storage';
+// Data loading is handled by collectors/facets.ts

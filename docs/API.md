@@ -78,9 +78,10 @@ Detect friction patterns and bottlenecks from insights data.
 
 **Example:**
 ```typescript
-import { analyzeBottlenecks, loadRecentDays } from 'claude-insights-toolkit';
+import { analyzeBottlenecks, loadStoredData } from 'claude-insights-toolkit';
 
-const data = await loadRecentDays(7);
+// Load data for the last 7 days
+const data = await loadStoredData({ days: 7 });
 const analysis = analyzeBottlenecks(data);
 
 console.log(`Found ${analysis.bottlenecks.length} bottlenecks`);
@@ -103,9 +104,10 @@ Analyze productivity trends over time.
 
 **Example:**
 ```typescript
-import { analyzeTrends, loadRecentDays } from 'claude-insights-toolkit';
+import { analyzeTrends, loadStoredData } from 'claude-insights-toolkit';
 
-const data = await loadRecentDays(30);
+// Load data for the last 30 days
+const data = await loadStoredData({ days: 30 });
 const trends = analyzeTrends(data, { metric: 'sessions' });
 
 trends.trends.forEach(t => {
@@ -130,9 +132,10 @@ Generate CLAUDE.md improvement suggestions.
 
 **Example:**
 ```typescript
-import { generateClaudeMd, analyzeBottlenecks, loadRecentDays } from 'claude-insights-toolkit';
+import { generateClaudeMd, analyzeBottlenecks, loadStoredData } from 'claude-insights-toolkit';
 
-const data = await loadRecentDays(7);
+// Load data for the last 7 days
+const data = await loadStoredData({ days: 7 });
 const analysis = analyzeBottlenecks(data);
 const suggestions = generateClaudeMd(analysis, {
   category: 'architecture',
@@ -141,120 +144,6 @@ const suggestions = generateClaudeMd(analysis, {
 
 console.log(suggestions);
 ```
-
-## Storage
-
-### `initStorage(config)`
-
-Initialize storage directory.
-
-**Parameters:**
-- `config?: Partial<IStorageConfig>`
-  - `dataPath?: string` - Path to store data (default: './.cit-data')
-  - `maxDays?: number` - Max retention days (default: 90)
-  - `autoCleanup?: boolean` - Auto cleanup old data (default: true)
-
-**Returns:** `Promise<void>`
-
-**Example:**
-```typescript
-import { initStorage } from 'claude-insights-toolkit';
-
-await initStorage({
-  dataPath: './my-insights',
-  maxDays: 180,
-});
-```
-
-### `storeInsightsData(date, data)`
-
-Store insights data for a specific date.
-
-**Parameters:**
-- `date: string` - Date in YYYY-MM-DD format
-- `data: IInsightsDay` - Insights data to store
-
-**Returns:** `Promise<void>`
-
-### `loadInsightsData(date)`
-
-Load insights data for a specific date.
-
-**Parameters:**
-- `date: string` - Date in YYYY-MM-DD format
-
-**Returns:** `Promise<IInsightsDay | null>`
-
-### `loadDateRange(startDate, endDate)`
-
-Load insights data for a date range.
-
-**Parameters:**
-- `startDate: string` - Start date (YYYY-MM-DD)
-- `endDate: string` - End date (YYYY-MM-DD)
-
-**Returns:** `Promise<IInsightsDay[]>`
-
-**Example:**
-```typescript
-const data = await loadDateRange('2025-02-01', '2025-02-07');
-console.log(`Loaded ${data.length} days of data`);
-```
-
-### `loadRecentDays(days)`
-
-Load most recent N days of data.
-
-**Parameters:**
-- `days: number` - Number of days to load
-
-**Returns:** `Promise<IInsightsDay[]>` - Sorted by date (newest first)
-
-**Example:**
-```typescript
-const last7Days = await loadRecentDays(7);
-const last30Days = await loadRecentDays(30);
-```
-
-### `getStorageStats()`
-
-Get storage usage information.
-
-**Returns:** `Promise<{ totalDays, totalSessions, oldestDate, newestDate, sizeBytes }>`
-
-**Example:**
-```typescript
-const stats = await getStorageStats();
-console.log(`Total sessions: ${stats.totalSessions}`);
-console.log(`Date range: ${stats.oldestDate} to ${stats.newestDate}`);
-console.log(`Storage size: ${(stats.sizeBytes / 1024 / 1024).toFixed(2)} MB`);
-```
-
-### `exportData(outputPath, startDate?, endDate?)`
-
-Export data to JSON file.
-
-**Parameters:**
-- `outputPath: string` - File path for export
-- `startDate?: string` - Optional start date filter
-- `endDate?: string` - Optional end date filter
-
-**Returns:** `Promise<void>`
-
-**Example:**
-```typescript
-await exportData('./backup.json');
-await exportData('./february.json', '2025-02-01', '2025-02-28');
-```
-
-### `importData(inputPath)`
-
-Import data from JSON file.
-
-**Parameters:**
-- `inputPath: string` - File path to import from
-
-**Returns:** `Promise<void>`
 
 ## Types
 

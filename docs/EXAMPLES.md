@@ -117,14 +117,14 @@ import {
   collectFacets,
   analyzeBottlenecks,
   generateClaudeMd,
-  loadRecentDays,
+  loadStoredData,
 } from 'claude-insights-toolkit';
 
 // Collect data
 await collectFacets({ date: '2025-02-05' });
 
-// Load and analyze
-const data = await loadRecentDays(7);
+// Load and analyze (last 7 days)
+const data = await loadStoredData({ days: 7 });
 const analysis = analyzeBottlenecks(data);
 
 // Generate suggestions
