@@ -103,6 +103,40 @@ npx cit health
 - 실시간 데이터 수집 (light 모드)
 - 백그라운드 실행
 
+## 웹 대시보드
+
+### 시작하기
+
+```bash
+# 프로덕션 모드 (권장)
+npm run build
+npx cit dashboard
+
+# 개발 모드 (핫 리로드)
+npx cit dashboard --dev
+```
+
+### 옵션
+
+```bash
+# 포트 변경
+npx cit dashboard --port 8080
+
+# 브라우저 자동 오픈 비활성화
+npx cit dashboard --no-open
+
+# Vite 개발 서버 직접 실행
+cd web && npm run dev
+```
+
+### 기능
+
+- **프로덕션 모드**: Node.js built-in HTTP 서버 (Express 불필요)
+- **개발 모드**: Vite 개발 서버 (핫 리로드 지원)
+- **자동 빌드**: web/dist가 없으면 자동으로 빌드
+- **브라우저 오픈**: 기본적으로 브라우저 자동 실행
+- **API 엔드포인트**: 6개의 REST API (data, dates, reports, snapshots, profile)
+
 ## 데이터 진단
 
 ### 무결성 검사

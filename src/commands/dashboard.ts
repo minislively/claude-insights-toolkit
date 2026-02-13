@@ -141,11 +141,12 @@ export async function startDashboard(options: { port: number; open: boolean; dev
 
   server.listen(options.port, () => {
     const url = `http://localhost:${options.port}`;
-    console.log(`\nDashboard running at: ${url}`);
-    console.log('Press Ctrl+C to stop.\n');
+    console.log(`\n✨ Dashboard running at: ${url}`);
+    console.log('📊 Insights data: ~/claude-insights/data');
+    console.log('⏹  Press Ctrl+C to stop.\n');
 
     if (options.open) {
-      openBrowser(url);
+      setTimeout(() => openBrowser(url), 500); // Small delay for better UX
     }
   });
 
