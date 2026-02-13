@@ -113,9 +113,16 @@ export async function runHealthCheck(): Promise<IHealthCheckResult> {
     try {
       const settingsRaw = await fs.readFile(SETTINGS_FILE, 'utf-8');
       const settings = JSON.parse(settingsRaw) as {
-        hooks?: { postSession?: Array<{ command?: string }> };
+        hooks?: {
+          UserPromptSubmit?: Array<{ command?: string }>;
+          postSession?: Array<{ command?: string }>;
+        };
       };
+      // Check both UserPromptSubmit (new) and postSession (legacy)
       hookRegistered = Boolean(
+        settings.hooks?.UserPromptSubmit?.some((entry) =>
+          String(entry?.command || '').includes('cit-auto-collect'),
+        ) ||
         settings.hooks?.postSession?.some((entry) =>
           String(entry?.command || '').includes('cit-auto-collect'),
         ),
@@ -126,11 +133,11 @@ export async function runHealthCheck(): Promise<IHealthCheckResult> {
   }
 
   checks.push({
-    name: 'post-session hook registration',
-    status: hookExists && hookRegistered ? 'PASS' : 'FAIL',
+    name: 'auto-collection hook',
+    status: hookExists && hookRegistered ? 'PASS' : 'WARN',
     details: hookExists && hookRegistered
       ? 'cit-auto-collect registered in ~/.claude/settings.json'
-      : 'Run `cit setup` to register hook',
+      : 'Hook not configured - run `cit setup` for automatic collection',
   });
 
   checks.push({
@@ -185,6 +192,16 @@ export async function runHealthCheck(): Promise<IHealthCheckResult> {
   }
 
   checks.push(recencyCheck);
+
+  // Auto-collection configuration summary
+  const autoCollectionEnabled = (hookExists && hookRegistered) || daemonPidExists;
+  checks.push({
+    name: 'auto-collection status',
+    status: autoCollectionEnabled ? 'PASS' : 'WARN',
+    details: autoCollectionEnabled
+      ? `Enabled via ${hookRegistered ? 'hook' : ''}${hookRegistered && daemonPidExists ? ' + ' : ''}${daemonPidExists ? 'daemon' : ''}`
+      : 'Not configured - manual collection required (cit collect)',
+  });
 
   return {
     status: aggregateStatus(checks),

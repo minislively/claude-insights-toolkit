@@ -72,6 +72,37 @@ Claude Code 사용 데이터를 분석하여 개인 및 팀의 생산성을 향�
 - 생체리듬(크로노타입)과 인지 능력의 연관성
 - **권장 액션:** 중요/복잡한 작업을 개인 최적 시간대에 배치
 
+## 설치 및 설정
+
+### 빠른 시작
+
+```bash
+# 1. 설치
+npm install
+
+# 2. 자동 수집 설정 (권장)
+npm run build
+npx cit setup
+
+# 3. 기존 데이터 수집
+npx cit collect --all
+
+# 4. 상태 확인
+npx cit health
+```
+
+### 자동 수집 방법
+
+**옵션 1: 훅 기반 (권장)**
+- `cit setup` 명령으로 UserPromptSubmit 훅 자동 설정
+- Claude Code 세션 후 자동으로 데이터 수집
+- 설정 마찰 최소화
+
+**옵션 2: 데몬 기반 (선택)**
+- `cit daemon start`로 파일 감시 데몬 시작
+- 실시간 데이터 수집 (light 모드)
+- 백그라운드 실행
+
 ## 데이터 진단
 
 ### 무결성 검사
@@ -92,8 +123,11 @@ npx cit doctor
 ### 설정 진단
 
 ```bash
-# 설정 및 인프라 건강 체크
+# 자동 수집 상태 확인
 npx cit health
+
+# 데몬 상태 확인
+npx cit daemon status
 ```
 
 **검사 항목:**
@@ -104,9 +138,6 @@ npx cit health
 ## 개발
 
 ```bash
-# 설치
-npm install
-
 # 개발 서버
 npm run dev
 
