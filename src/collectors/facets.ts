@@ -7,6 +7,7 @@ import * as path from 'path';
 import { homedir } from 'os';
 import { IInsightsDay, ISessionFacet, ICostKpi } from '../types/insights';
 import { deduplicateDaySessions } from '../utils/sessions';
+import { createSnapshot } from './snapshot';
 
 const FACETS_PATH = path.join(homedir(), '.claude', 'usage-data', 'facets');
 const REPORT_PATH = path.join(homedir(), '.claude', 'usage-data', 'report.html');
@@ -14,11 +15,15 @@ const DEFAULT_OUTPUT_PATH = path.join(homedir(), 'claude-insights', 'data');
 const REPORTS_OUTPUT_PATH = path.join(homedir(), 'claude-insights', 'reports');
 const LOCK_DIR = path.join(homedir(), 'claude-insights', '.locks');
 const FACETS_COLLECT_LOCK = path.join(LOCK_DIR, 'collect-facets.lock');
+const FACETS_COLLECT_STATE_PATH = path.join(LOCK_DIR, 'collect-facets.state.json');
+const DEFAULT_LIGHT_DEBOUNCE_MS = 5000;
 
 export interface ICollectOptions {
   date?: string; // YYYY-MM-DD format, defaults to today
   collectAll?: boolean; // Collect all available dates
   outputPath?: string; // Where to save, defaults to ~/claude-insights/data/
+  mode?: 'full' | 'light'; // defaults to full
+  debounceMs?: number; // light mode only
 }
 
 export interface ICollectResult {
@@ -41,6 +46,71 @@ function getToday(): string {
   return new Date().toISOString().split('T')[0];
 }
 
+type CollectMode = 'full' | 'light';
+
+interface ICollectFacetsState {
+  lastLightRunAt?: number;
+  lastFullFingerprint?: string;
+}
+
+async function readCollectorState(): Promise<ICollectFacetsState> {
+  try {
+    const raw = await fs.readFile(FACETS_COLLECT_STATE_PATH, 'utf-8');
+    const parsed = JSON.parse(raw) as Partial<ICollectFacetsState>;
+    return {
+      lastLightRunAt: typeof parsed.lastLightRunAt === 'number' ? parsed.lastLightRunAt : undefined,
+      lastFullFingerprint: typeof parsed.lastFullFingerprint === 'string' ? parsed.lastFullFingerprint : undefined,
+    };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return {};
+    }
+    return {};
+  }
+}
+
+async function writeCollectorState(state: ICollectFacetsState): Promise<void> {
+  await fs.mkdir(LOCK_DIR, { recursive: true });
+  await fs.writeFile(FACETS_COLLECT_STATE_PATH, JSON.stringify(state, null, 2), 'utf-8');
+}
+
+async function buildFacetsFingerprint(mode: CollectMode): Promise<string> {
+  let count = 0;
+  let latestMtimeMs = 0;
+
+  try {
+    const files = await fs.readdir(FACETS_PATH);
+    const jsonFiles = files.filter((f) => f.endsWith('.json'));
+    count = jsonFiles.length;
+
+    for (const file of jsonFiles) {
+      const stat = await fs.stat(path.join(FACETS_PATH, file));
+      latestMtimeMs = Math.max(latestMtimeMs, stat.mtime.getTime());
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
+  let fingerprint = `facets:${count}:${latestMtimeMs}`;
+
+  if (mode === 'full') {
+    try {
+      const reportStat = await fs.stat(REPORT_PATH);
+      fingerprint += `|report:${reportStat.mtime.getTime()}:${reportStat.size}`;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        fingerprint += '|report:none';
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  return fingerprint;
+}
+
 /**
  * Read all facet files from the source directory
  */
@@ -49,7 +119,7 @@ async function readFacetFiles(): Promise<Map<string, ISessionFacet[]>> {
 
   try {
     const files = await fs.readdir(FACETS_PATH);
-    const jsonFiles = files.filter(f => f.endsWith('.json'));
+    const jsonFiles = files.filter((f) => f.endsWith('.json')).sort();
 
     for (const file of jsonFiles) {
       const filePath = path.join(FACETS_PATH, file);
@@ -141,6 +211,7 @@ async function releaseCollectLock(): Promise<void> {
 export async function collectFacets(options: ICollectOptions = {}): Promise<ICollectResult> {
   const outputPath = options.outputPath || DEFAULT_OUTPUT_PATH;
   const targetDate = options.date || getToday();
+  const mode: CollectMode = options.mode || 'full';
 
   const lockAcquired = await acquireCollectLock();
   if (!lockAcquired) {
@@ -156,6 +227,40 @@ export async function collectFacets(options: ICollectOptions = {}): Promise<ICol
   }
 
   try {
+    const state = await readCollectorState();
+    const now = Date.now();
+
+    if (mode === 'light') {
+      const debounceMs = options.debounceMs ?? DEFAULT_LIGHT_DEBOUNCE_MS;
+      if (state.lastLightRunAt && now - state.lastLightRunAt < debounceMs) {
+        return {
+          sessionsCollected: 0,
+          datesProcessed: [],
+          storagePath: outputPath,
+          reportCopied: false,
+          snapshotCreated: false,
+          skipped: true,
+          skipReason: `Collection skipped: light mode debounce (${debounceMs}ms)`,
+        };
+      }
+    }
+
+    let fullFingerprint: string | undefined;
+    if (mode === 'full') {
+      fullFingerprint = await buildFacetsFingerprint('full');
+      if (state.lastFullFingerprint && fullFingerprint === state.lastFullFingerprint) {
+        return {
+          sessionsCollected: 0,
+          datesProcessed: [],
+          storagePath: outputPath,
+          reportCopied: false,
+          snapshotCreated: false,
+          skipped: true,
+          skipReason: 'Collection skipped: no changes detected since last full run',
+        };
+      }
+    }
+
     const dateMap = await readFacetFiles();
     const datesProcessed: string[] = [];
     let totalSessions = 0;
@@ -164,22 +269,39 @@ export async function collectFacets(options: ICollectOptions = {}): Promise<ICol
       // Process all available dates
       for (const [date, sessions] of Array.from(dateMap.entries())) {
         const dedupedDay = deduplicateDaySessions({ date, sessions });
-        await saveDailyData(date, dedupedDay.sessions, outputPath);
+        const sortedSessions = [...dedupedDay.sessions].sort((a, b) => a.session_id.localeCompare(b.session_id));
+        await saveDailyData(date, sortedSessions, outputPath);
         datesProcessed.push(date);
-        totalSessions += dedupedDay.sessions.length;
+        totalSessions += sortedSessions.length;
       }
     } else {
       // Process only the target date
       const sessions = dateMap.get(targetDate) || [];
       if (sessions.length > 0) {
         const dedupedDay = deduplicateDaySessions({ date: targetDate, sessions });
-        await saveDailyData(targetDate, dedupedDay.sessions, outputPath);
+        const sortedSessions = [...dedupedDay.sessions].sort((a, b) => a.session_id.localeCompare(b.session_id));
+        await saveDailyData(targetDate, sortedSessions, outputPath);
         datesProcessed.push(targetDate);
-        totalSessions = dedupedDay.sessions.length;
+        totalSessions = sortedSessions.length;
       }
     }
 
-    // Copy report.html if available
+    if (mode === 'light') {
+      await writeCollectorState({
+        ...state,
+        lastLightRunAt: now,
+      });
+
+      return {
+        sessionsCollected: totalSessions,
+        datesProcessed,
+        storagePath: outputPath,
+        reportCopied: false,
+        snapshotCreated: false,
+      };
+    }
+
+    // full mode: copy report.html if available
     const reportResult = await copyReportHtml(targetDate);
 
     // Create snapshot from report if available
@@ -189,7 +311,6 @@ export async function collectFacets(options: ICollectOptions = {}): Promise<ICol
 
     if (reportResult.copied && reportResult.path) {
       try {
-        const { createSnapshot } = await import('./snapshot');
         const snapshotResult = await createSnapshot(
           reportResult.path,
           totalSessions,
@@ -202,6 +323,11 @@ export async function collectFacets(options: ICollectOptions = {}): Promise<ICol
         console.warn('Warning: Failed to create snapshot:', error instanceof Error ? error.message : error);
       }
     }
+
+    await writeCollectorState({
+      ...state,
+      lastFullFingerprint: fullFingerprint,
+    });
 
     return {
       sessionsCollected: totalSessions,

@@ -62,8 +62,12 @@ export async function startDaemon(): Promise<void> {
 
     try {
       const { collectFacets } = await import('../collectors/facets');
-      const result = await collectFacets();
-      logMessage(`Collection complete: ${result.sessionsCollected} sessions from ${result.datesProcessed.join(', ')}`);
+      const result = await collectFacets({ mode: 'light' });
+      if (result.skipped) {
+        logMessage(`Collection skipped: ${result.skipReason || 'no reason provided'}`);
+      } else {
+        logMessage(`Collection complete: ${result.sessionsCollected} sessions from ${result.datesProcessed.join(', ')}`);
+      }
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       logMessage(`Collection failed: ${msg}`);

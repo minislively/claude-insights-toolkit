@@ -35,6 +35,7 @@ describe('runHealthCheck', () => {
   const todaySnapshotArtifact = path.join(outputSnapshots, `snapshot-${today}.json`);
   const hookScript = path.join(home, '.claude', 'hooks', 'cit-auto-collect.js');
   const settingsFile = path.join(home, '.claude', 'settings.json');
+  const daemonPidFile = path.join(home, 'claude-insights', '.daemon.pid');
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -111,5 +112,29 @@ describe('runHealthCheck', () => {
     const artifactChecks = result.checks.filter((c) => c.name.includes("today's"));
     expect(artifactChecks).toHaveLength(3);
     expect(artifactChecks.every((c) => c.status === 'WARN')).toBe(true);
+  });
+
+  it('returns WARN for duplicate trigger risk when hook is active and daemon pid exists', async () => {
+    createAccessMock(
+      new Set([
+        sourceFacets,
+        sourceReport,
+        outputDir,
+        outputData,
+        outputReports,
+        todayDataArtifact,
+        todayReportArtifact,
+        todaySnapshotArtifact,
+        hookScript,
+        settingsFile,
+        daemonPidFile,
+      ]),
+    );
+
+    const result = await runHealthCheck();
+
+    const duplicateCheck = result.checks.find((c) => c.name === 'hook + daemon duplicate trigger risk');
+    expect(duplicateCheck?.status).toBe('WARN');
+    expect(result.status).toBe('WARN');
   });
 });
