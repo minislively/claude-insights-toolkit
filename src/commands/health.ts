@@ -25,6 +25,7 @@ const OUTPUT_SNAPSHOTS_DIR = path.join(OUTPUT_DIR, 'snapshots');
 const HOOK_SCRIPT = path.join(HOME, '.claude', 'hooks', 'cit-auto-collect.js');
 const LEGACY_HOOK_SCRIPT = path.join(HOME, '.claude', 'hooks', 'insights-auto-collect.sh');
 const SETTINGS_FILE = path.join(HOME, '.claude', 'settings.json');
+const DAEMON_PID_FILE = path.join(HOME, 'claude-insights', '.daemon.pid');
 
 async function exists(target: string): Promise<boolean> {
   try {
@@ -138,6 +139,15 @@ export async function runHealthCheck(): Promise<IHealthCheckResult> {
     details: (await exists(LEGACY_HOOK_SCRIPT))
       ? `Legacy hook found: ${LEGACY_HOOK_SCRIPT}`
       : 'No legacy hook detected',
+  });
+
+  const daemonPidExists = await exists(DAEMON_PID_FILE);
+  checks.push({
+    name: 'hook + daemon duplicate trigger risk',
+    status: hookExists && hookRegistered && daemonPidExists ? 'WARN' : 'PASS',
+    details: hookExists && hookRegistered && daemonPidExists
+      ? `Hook is active and daemon PID found (${DAEMON_PID_FILE}); duplicate collection can occur`
+      : 'No hook/daemon duplicate trigger risk detected',
   });
 
   let recencyCheck: IHealthCheckItem = {

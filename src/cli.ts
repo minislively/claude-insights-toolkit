@@ -64,6 +64,7 @@ program
   .option('-d, --date <YYYY-MM-DD>', 'Specific date to collect')
   .option('-a, --all', 'Collect all available historical data')
   .option('-o, --output <path>', 'Output path for collected data')
+  .option('--mode <full|light>', 'Collection mode (default: full)', 'full')
   .action(async (options) => {
     const spinner = ora('Collecting insights data...').start();
 
@@ -72,6 +73,7 @@ program
         date: options.date,
         collectAll: options.all,
         outputPath: options.output,
+        mode: options.mode,
       });
 
       spinner.succeed(chalk.green('Insights data collected successfully'));
@@ -822,8 +824,9 @@ program
       }
 
       console.log(chalk.blue('\nNext steps:'));
+      console.log('  • Hook path (default): auto full collection runs after each Claude session');
       console.log('  • Run: cit collect --all  (gather historical data)');
-      console.log('  • Run: cit daemon start   (start auto-collection)');
+      console.log('  • Run: cit daemon start   (optional realtime monitoring, light mode)');
     } catch (error) {
       spinner.fail(chalk.red('Setup failed'));
       if (error instanceof Error) {

@@ -166,6 +166,8 @@ export async function runSetup(): Promise<ISetupResult> {
     steps.push(`Validation passed: ${validations.join(', ')}`);
   }
 
+  steps.push('Collection roles: post-session hook is default full collection path; daemon is optional realtime monitoring only');
+
   return {
     success: errors.length === 0,
     steps,
