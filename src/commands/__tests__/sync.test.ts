@@ -14,7 +14,7 @@ describe('classifySyncError', () => {
     const result = classifySyncError(error, 'pull');
 
     expect(result.errorCode).toBe('PULL_CONFLICT');
-    expect(result.actionHint).toContain('Resolve local merge conflicts');
+    expect(result.actionHint).toContain('pull strategy');
   });
 
   it('classifies push rejection', () => {

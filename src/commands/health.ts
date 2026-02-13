@@ -21,6 +21,7 @@ const SOURCE_REPORT_PATH = path.join(HOME, '.claude', 'usage-data', 'report.html
 const OUTPUT_DIR = path.join(HOME, 'claude-insights');
 const OUTPUT_DATA_DIR = path.join(OUTPUT_DIR, 'data');
 const OUTPUT_REPORTS_DIR = path.join(OUTPUT_DIR, 'reports');
+const OUTPUT_SNAPSHOTS_DIR = path.join(OUTPUT_DIR, 'snapshots');
 const HOOK_SCRIPT = path.join(HOME, '.claude', 'hooks', 'cit-auto-collect.js');
 const LEGACY_HOOK_SCRIPT = path.join(HOME, '.claude', 'hooks', 'insights-auto-collect.sh');
 const SETTINGS_FILE = path.join(HOME, '.claude', 'settings.json');
@@ -32,6 +33,10 @@ async function exists(target: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+function getToday(): string {
+  return new Date().toISOString().split('T')[0];
 }
 
 function aggregateStatus(checks: IHealthCheckItem[]): 'PASS' | 'WARN' | 'FAIL' {
@@ -75,6 +80,29 @@ export async function runHealthCheck(): Promise<IHealthCheckResult> {
     name: 'output reports path',
     status: (await exists(OUTPUT_REPORTS_DIR)) ? 'PASS' : 'WARN',
     details: OUTPUT_REPORTS_DIR,
+  });
+
+  const today = getToday();
+  const todayDataArtifact = path.join(OUTPUT_DATA_DIR, `${today}.json`);
+  const todayReportArtifact = path.join(OUTPUT_REPORTS_DIR, `report-${today}.html`);
+  const todaySnapshotArtifact = path.join(OUTPUT_SNAPSHOTS_DIR, `snapshot-${today}.json`);
+
+  checks.push({
+    name: "today's data artifact",
+    status: (await exists(todayDataArtifact)) ? 'PASS' : 'WARN',
+    details: todayDataArtifact,
+  });
+
+  checks.push({
+    name: "today's report artifact",
+    status: (await exists(todayReportArtifact)) ? 'PASS' : 'WARN',
+    details: todayReportArtifact,
+  });
+
+  checks.push({
+    name: "today's snapshot artifact",
+    status: (await exists(todaySnapshotArtifact)) ? 'PASS' : 'WARN',
+    details: todaySnapshotArtifact,
   });
 
   const hookExists = await exists(HOOK_SCRIPT);

@@ -28,10 +28,18 @@ describe('runHealthCheck', () => {
   const outputDir = path.join(home, 'claude-insights');
   const outputData = path.join(outputDir, 'data');
   const outputReports = path.join(outputDir, 'reports');
+  const outputSnapshots = path.join(outputDir, 'snapshots');
+  const today = '2026-02-12';
+  const todayDataArtifact = path.join(outputData, `${today}.json`);
+  const todayReportArtifact = path.join(outputReports, `report-${today}.html`);
+  const todaySnapshotArtifact = path.join(outputSnapshots, `snapshot-${today}.json`);
   const hookScript = path.join(home, '.claude', 'hooks', 'cit-auto-collect.js');
   const settingsFile = path.join(home, '.claude', 'settings.json');
 
   beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-02-12T12:00:00.000Z'));
+
     jest.clearAllMocks();
     fs.readFile.mockResolvedValue(
       JSON.stringify({
@@ -46,6 +54,10 @@ describe('runHealthCheck', () => {
     });
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('returns PASS when all key checks are healthy', async () => {
     createAccessMock(
       new Set([
@@ -54,6 +66,9 @@ describe('runHealthCheck', () => {
         outputDir,
         outputData,
         outputReports,
+        todayDataArtifact,
+        todayReportArtifact,
+        todaySnapshotArtifact,
         hookScript,
         settingsFile,
       ]),
@@ -73,5 +88,28 @@ describe('runHealthCheck', () => {
     expect(result.status).toBe('FAIL');
     const sourceCheck = result.checks.find((c) => c.name === 'source facets path');
     expect(sourceCheck?.status).toBe('FAIL');
+  });
+
+  it("returns WARN when today's artifacts are missing", async () => {
+    createAccessMock(
+      new Set([
+        sourceFacets,
+        sourceReport,
+        outputDir,
+        outputData,
+        outputReports,
+        hookScript,
+        settingsFile,
+      ]),
+    );
+
+    const result = await runHealthCheck();
+
+    expect(result.status).toBe('WARN');
+    expect(result.checks.some((c) => c.status === 'FAIL')).toBe(false);
+
+    const artifactChecks = result.checks.filter((c) => c.name.includes("today's"));
+    expect(artifactChecks).toHaveLength(3);
+    expect(artifactChecks.every((c) => c.status === 'WARN')).toBe(true);
   });
 });

@@ -36,15 +36,17 @@ function generateHookScript(): string {
  * Installed by: cit setup
  */
 
-const { execSync } = require('child_process');
+const { spawn } = require('child_process');
 
 try {
-  // Run collection in the background so it doesn't block Claude Code
-  execSync('npx cit collect', {
+  // Fire-and-forget collection so hook execution returns immediately
+  const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+  const child = spawn(npxCmd, ['cit', 'collect'], {
     cwd: '${INSIGHTS_DIR.replace(/\\/g, '\\\\')}',
     stdio: 'ignore',
-    timeout: 30000,
+    detached: true,
   });
+  child.unref();
 } catch {
   // Silently fail — don't interrupt Claude Code
 }

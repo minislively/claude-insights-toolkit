@@ -86,3 +86,7 @@ tests/fixtures/generated/
 # Collected insights data (user data should not be committed)
 collected-data/
 insights-db/
+
+# Local tooling configs / external modules
+.mcp.json
+claude-talk-to-figma-mcp/

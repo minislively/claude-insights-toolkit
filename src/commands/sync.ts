@@ -53,9 +53,15 @@ export function classifySyncError(error: unknown, phase: 'pull' | 'push' | 'pref
     phase === 'pull' &&
     (normalized.includes('conflict') ||
       normalized.includes('please commit your changes') ||
-      normalized.includes('automatic merge failed'))
+      normalized.includes('automatic merge failed') ||
+      normalized.includes('need to specify how to reconcile divergent branches') ||
+      normalized.includes('divergent branches'))
   ) {
-    return makeSyncError('PULL_CONFLICT', message, 'Resolve local merge conflicts, commit, then run `cit sync` again.');
+    return makeSyncError(
+      'PULL_CONFLICT',
+      message,
+      'Run `git config pull.rebase false` (or your preferred pull strategy), resolve conflicts if any, then run `cit sync` again.',
+    );
   }
 
   if (
