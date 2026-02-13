@@ -1,4 +1,16 @@
-import { classifySyncError } from '../sync';
+import simpleGit from 'simple-git';
+import { classifySyncError, initSync } from '../sync';
+
+jest.mock('simple-git');
+jest.mock('child_process', () => {
+  const exec = jest.fn() as any;
+  exec[Symbol.for('nodejs.util.promisify.custom')] = jest.fn();
+  return { exec };
+});
+
+const simpleGitMock = simpleGit as unknown as jest.Mock;
+const execMock: any = require('child_process').exec;
+const execAsyncMock = execMock[Symbol.for('nodejs.util.promisify.custom')] as jest.Mock;
 
 describe('classifySyncError', () => {
   it('classifies authentication failures', () => {
@@ -30,5 +42,78 @@ describe('classifySyncError', () => {
     const result = classifySyncError(error, 'preflight');
 
     expect(result.errorCode).toBe('UNKNOWN');
+  });
+});
+
+describe('initSync', () => {
+  const mockGit = {
+    status: jest.fn(),
+    init: jest.fn(),
+    add: jest.fn(),
+    commit: jest.fn(),
+    getRemotes: jest.fn(),
+    remote: jest.fn(),
+    addRemote: jest.fn(),
+    push: jest.fn(),
+    branchLocal: jest.fn(),
+    branch: jest.fn(),
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    simpleGitMock.mockReturnValue(mockGit);
+
+    mockGit.status.mockResolvedValue({});
+    mockGit.getRemotes.mockResolvedValue([]);
+    mockGit.addRemote.mockResolvedValue(undefined);
+    mockGit.push.mockResolvedValue(undefined);
+
+    execAsyncMock.mockImplementation(async (command: string) => {
+      if (command.includes('gh auth status')) {
+        return { stdout: 'Logged in to github.com account test-user' };
+      }
+
+      if (command.includes('gh repo view')) {
+        return { stdout: JSON.stringify({ url: 'https://github.com/test-user/test-repo' }) };
+      }
+
+      if (command.includes('gh repo create')) {
+        return { stdout: 'https://github.com/test-user/test-repo' };
+      }
+
+      throw new Error(`Unhandled command: ${command}`);
+    });
+  });
+
+  it('prefers main branch when local main exists', async () => {
+    mockGit.branchLocal.mockResolvedValue({ all: ['main', 'feature'], current: 'feature' });
+
+    const result = await initSync('test-repo');
+
+    expect(result.success).toBe(true);
+    expect(mockGit.push).toHaveBeenCalledWith('origin', 'main', ['--set-upstream']);
+    expect(result.steps).toContain('✓ Initial push complete (main)');
+  });
+
+  it('falls back to master when main does not exist', async () => {
+    mockGit.branchLocal.mockResolvedValue({ all: ['master'], current: 'master' });
+
+    const result = await initSync('test-repo');
+
+    expect(result.success).toBe(true);
+    expect(mockGit.push).toHaveBeenCalledWith('origin', 'master', ['--set-upstream']);
+    expect(result.steps).toContain('✓ Initial push complete (master)');
+  });
+
+  it('falls back to current git branch when neither main nor master exists', async () => {
+    mockGit.branchLocal.mockResolvedValue({ all: ['feature-sync'], current: 'feature-sync' });
+    mockGit.branch.mockResolvedValue({ current: 'feature-sync' });
+
+    const result = await initSync('test-repo');
+
+    expect(result.success).toBe(true);
+    expect(mockGit.push).toHaveBeenCalledWith('origin', 'feature-sync', ['--set-upstream']);
+    expect(result.steps).toContain('✓ Initial push complete (feature-sync)');
   });
 });
