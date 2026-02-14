@@ -6,7 +6,7 @@
  * session is counted exactly once (first-occurrence wins).
  */
 
-import type { IInsightsDay, ISessionFacet } from '../types/insights';
+import type { IInsightsDay, ISessionFacet, IDeduplicationStats } from '../types/insights';
 
 /**
  * Flatten all days and deduplicate sessions by session_id.
@@ -42,5 +42,27 @@ export function deduplicateDaySessions(day: IInsightsDay): IInsightsDay {
   return {
     date: day.date,
     sessions: Array.from(seen.values()),
+  };
+}
+
+/**
+ * Calculate deduplication statistics for a dataset.
+ * Returns stats showing how many duplicates were removed.
+ */
+export function calculateDeduplicationStats(data: IInsightsDay[]): IDeduplicationStats {
+  let totalSessions = 0;
+  for (const day of data) {
+    totalSessions += day.sessions.length;
+  }
+
+  const uniqueSessions = deduplicateSessions(data).length;
+  const duplicatesRemoved = totalSessions - uniqueSessions;
+  const duplicationRate = totalSessions > 0 ? (duplicatesRemoved / totalSessions) * 100 : 0;
+
+  return {
+    totalSessions,
+    uniqueSessions,
+    duplicatesRemoved,
+    duplicationRate: Math.round(duplicationRate * 100) / 100, // Round to 2 decimal places
   };
 }

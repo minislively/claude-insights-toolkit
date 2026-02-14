@@ -171,11 +171,22 @@ export interface ITrendAnalysis {
 }
 
 /**
+ * Session deduplication statistics
+ */
+export interface IDeduplicationStats {
+  totalSessions: number; // Total sessions across all days before dedup
+  uniqueSessions: number; // Unique sessions after dedup
+  duplicatesRemoved: number; // Number of duplicate sessions removed
+  duplicationRate: number; // Percentage of duplicate sessions (0-100)
+}
+
+/**
  * Base analyzer result interface
  */
 export interface IAnalyzerResult {
   summary: string;
   generatedAt: string; // ISO 8601 timestamp
+  deduplicationStats?: IDeduplicationStats; // Session dedup statistics
 }
 
 /**
