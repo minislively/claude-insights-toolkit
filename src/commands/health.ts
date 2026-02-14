@@ -3,6 +3,8 @@ import * as path from 'path';
 import { homedir } from 'os';
 import { getScheduleStatus } from '../services/daemon';
 
+// NOTE: scheduler is configured via ~/claude-insights/.automation.json
+
 type HealthStatus = 'PASS' | 'WARN' | 'FAIL';
 
 export interface IHealthCheckItem {
@@ -27,6 +29,7 @@ const HOOK_SCRIPT = path.join(HOME, '.claude', 'hooks', 'cit-auto-collect.js');
 const LEGACY_HOOK_SCRIPT = path.join(HOME, '.claude', 'hooks', 'insights-auto-collect.sh');
 const SETTINGS_FILE = path.join(HOME, '.claude', 'settings.json');
 const DAEMON_PID_FILE = path.join(HOME, 'claude-insights', '.daemon.pid');
+const AUTOMATION_CONFIG_FILE = path.join(HOME, 'claude-insights', '.automation.json');
 
 async function exists(target: string): Promise<boolean> {
   try {
@@ -150,12 +153,58 @@ export async function runHealthCheck(): Promise<IHealthCheckResult> {
   });
 
   const daemonPidExists = await exists(DAEMON_PID_FILE);
+
+  // Scheduler configuration/activation (best-effort)
+  const schedulerConfigured = await exists(AUTOMATION_CONFIG_FILE);
+  let schedulerActive = false;
+  let schedulerDetails = 'Scheduler not configured';
+
+  if (schedulerConfigured) {
+    try {
+      const scheduleStatus = getScheduleStatus();
+      schedulerActive = scheduleStatus.active;
+      schedulerDetails = scheduleStatus.active
+        ? `Scheduler active (${scheduleStatus.config?.scheduler ?? 'unknown'})`
+        : `Scheduler configured but inactive: ${scheduleStatus.reason || 'unknown reason'}`;
+    } catch {
+      schedulerActive = false;
+      schedulerDetails = 'Scheduler configured but status check failed';
+    }
+  }
+
   checks.push({
-    name: 'hook + daemon duplicate trigger risk',
-    status: hookExists && hookRegistered && daemonPidExists ? 'WARN' : 'PASS',
-    details: hookExists && hookRegistered && daemonPidExists
-      ? `Hook is active and daemon PID found (${DAEMON_PID_FILE}); duplicate collection can occur`
-      : 'No hook/daemon duplicate trigger risk detected',
+    name: 'auto-collection scheduler config',
+    status: 'PASS',
+    details: schedulerConfigured
+      ? `Found automation config: ${AUTOMATION_CONFIG_FILE}`
+      : `No automation config found: ${AUTOMATION_CONFIG_FILE}`,
+  });
+
+  checks.push({
+    name: 'auto-collection scheduler active',
+    status: schedulerConfigured
+      ? (schedulerActive ? 'PASS' : 'WARN')
+      : 'PASS',
+    details: schedulerDetails,
+  });
+
+  // Duplicate trigger warnings: warn if 2+ mechanisms are active
+  const hookActive = hookExists && hookRegistered;
+  const daemonActive = daemonPidExists;
+  const schedulerActiveFlag = schedulerConfigured && schedulerActive;
+
+  const activeMechanisms = [hookActive, daemonActive, schedulerActiveFlag].filter(Boolean).length;
+
+  checks.push({
+    name: 'duplicate trigger risk (hook/daemon/scheduler)',
+    status: activeMechanisms >= 2 ? 'WARN' : 'PASS',
+    details: activeMechanisms >= 2
+      ? `Multiple auto-collection triggers active (${[
+        hookActive ? 'hook' : null,
+        daemonActive ? 'daemon' : null,
+        schedulerActiveFlag ? 'scheduler' : null,
+      ].filter(Boolean).join(' + ')}) — duplicate collection can occur`
+      : 'No duplicate trigger risk detected',
   });
 
   let recencyCheck: IHealthCheckItem = {
@@ -195,12 +244,16 @@ export async function runHealthCheck(): Promise<IHealthCheckResult> {
   checks.push(recencyCheck);
 
   // Auto-collection configuration summary
-  const autoCollectionEnabled = (hookExists && hookRegistered) || daemonPidExists;
+  const autoCollectionEnabled = (hookExists && hookRegistered) || daemonPidExists || schedulerConfigured;
   checks.push({
     name: 'auto-collection status',
     status: autoCollectionEnabled ? 'PASS' : 'WARN',
     details: autoCollectionEnabled
-      ? `Enabled via ${hookRegistered ? 'hook' : ''}${hookRegistered && daemonPidExists ? ' + ' : ''}${daemonPidExists ? 'daemon' : ''}`
+      ? `Enabled via ${[
+        hookActive ? 'hook' : null,
+        daemonActive ? 'daemon' : null,
+        schedulerConfigured ? 'scheduler' : null,
+      ].filter(Boolean).join(' + ')}`
       : 'Not configured - manual collection required (cit collect)',
   });
 

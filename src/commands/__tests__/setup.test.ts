@@ -3,6 +3,10 @@
  */
 
 import { runSetup } from '../setup';
+
+jest.mock('../../services/daemon', () => ({
+  enableSchedule: jest.fn(() => ({ enabled: true })),
+}));
 import * as fs from 'fs';
 import * as path from 'path';
 import { homedir } from 'os';
@@ -44,7 +48,7 @@ describe('runSetup', () => {
   });
 
   it('should install hook script', async () => {
-    const result = await runSetup();
+    const result = await runSetup({ automation: 'hook' });
 
     expect(result.success).toBe(true);
     expect(fs.writeFileSync).toHaveBeenCalledWith(

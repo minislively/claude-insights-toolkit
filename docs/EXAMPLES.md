@@ -146,6 +146,25 @@ function myCustomAnalyzer(data: IInsightsDay[]): IBottleneck[] {
 
 ## Automation
 
+### Recommended scheduler and one-trigger principle
+
+For macOS, prefer `launchd` scheduler for periodic collection. Keep exactly one trigger active at a time to avoid duplicate runs:
+
+- Hook (`cit setup --automation hook`)
+- Realtime daemon (`cit daemon start`)
+- Scheduler (`cit daemon enable --scheduler launchd ...`)
+
+```bash
+# Enable launchd scheduler (every 30 minutes)
+cit daemon enable --scheduler launchd --interval 30m --mode full
+
+# Check daemon + scheduler status
+cit daemon status
+
+# Disable scheduler
+cit daemon disable --scheduler launchd
+```
+
 ### Daily collection script
 
 ```bash

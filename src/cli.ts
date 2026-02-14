@@ -47,8 +47,61 @@ import { handleDaemonCommand, DaemonAction } from './commands/daemon';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { homedir } from 'os';
 
 const program = new Command();
+
+function parseIntervalSeconds(input: string): number {
+  const trimmed = String(input || '').trim();
+  const match = /^([0-9]+)([smhd]?)$/i.exec(trimmed);
+  if (!match) {
+    throw new Error(`Invalid interval: ${input}. Use formats like 30m, 10s, 2h, 1d.`);
+  }
+
+  const value = parseInt(match[1], 10);
+  const unit = (match[2] || 's').toLowerCase();
+
+  if (value <= 0) {
+    throw new Error(`Invalid interval: ${input}. Value must be greater than 0.`);
+  }
+
+  switch (unit) {
+    case 's':
+      return value;
+    case 'm':
+      return value * 60;
+    case 'h':
+      return value * 60 * 60;
+    case 'd':
+      return value * 60 * 60 * 24;
+    default:
+      throw new Error(`Invalid interval unit: ${unit}`);
+  }
+}
+
+async function mirrorRawArtifacts(rawBackupPath: string): Promise<string[]> {
+  const sourceBase = path.join(homedir(), 'claude-insights');
+  const targets: Array<{ name: string; source: string; dest: string }> = [
+    { name: 'data', source: path.join(sourceBase, 'data'), dest: path.join(rawBackupPath, 'data') },
+    { name: 'reports', source: path.join(sourceBase, 'reports'), dest: path.join(rawBackupPath, 'reports') },
+    { name: 'snapshots', source: path.join(sourceBase, 'snapshots'), dest: path.join(rawBackupPath, 'snapshots') },
+  ];
+
+  const copied: string[] = [];
+  await fs.mkdir(rawBackupPath, { recursive: true });
+
+  for (const entry of targets) {
+    try {
+      await fs.access(entry.source);
+      await fs.cp(entry.source, entry.dest, { recursive: true, force: true });
+      copied.push(entry.name);
+    } catch {
+      // Skip missing source folders
+    }
+  }
+
+  return copied;
+}
 
 program
   .name('cit')
@@ -65,6 +118,8 @@ program
   .option('-a, --all', 'Collect all available historical data')
   .option('-o, --output <path>', 'Output path for collected data')
   .option('--mode <full|light>', 'Collection mode (default: full)', 'full')
+  .option('--sync', 'Sync after collection')
+  .option('--raw-backup <path>', 'Mirror raw artifacts (data/reports/snapshots) into path')
   .action(async (options) => {
     const spinner = ora('Collecting insights data...').start();
 
@@ -94,6 +149,24 @@ program
       if (result.estimatedCostKpi) {
         console.log(`  • Estimated tokens: ${chalk.bold(result.estimatedCostKpi.estimatedTokens.toLocaleString())} ${chalk.gray('(estimate)')}`);
         console.log(`  • Estimated cost: ${chalk.bold(`$${result.estimatedCostKpi.estimatedCostUsd.toFixed(4)}`)} ${chalk.gray(`(estimate, model: ${result.estimatedCostKpi.estimationModel})`)}`);
+      }
+
+      if (options.rawBackup) {
+        const copied = await mirrorRawArtifacts(options.rawBackup);
+        if (copied.length > 0) {
+          console.log(`  • Raw backup mirrored: ${chalk.bold(options.rawBackup)} ${chalk.gray(`(${copied.join(', ')})`)}`);
+        } else {
+          console.log(`  • Raw backup skipped: ${chalk.bold(options.rawBackup)} ${chalk.gray('(no source folders found)')}`);
+        }
+      }
+
+      if (options.sync) {
+        const syncResult = await sync();
+        if (syncResult.error) {
+          console.log(chalk.yellow(`  • Sync: failed (${syncResult.error.errorCode}) ${syncResult.error.message}`));
+        } else {
+          console.log(`  • Sync: ${chalk.green('complete')} ${chalk.gray(`(device: ${getDeviceId()})`)}`);
+        }
       }
     } catch (error) {
       spinner.fail(chalk.red('Failed to collect insights'));
@@ -803,11 +876,22 @@ program
 program
   .command('setup')
   .description('Auto-configure data collection (hooks, directories, settings)')
-  .action(async () => {
+  .option('--automation <hook|launchd|cron|none>', 'Automation type (default: hook)', 'hook')
+  .option('--interval <duration>', 'Schedule interval (default: 30m)', '30m')
+  .option('--mode <full|light>', 'Collection mode for scheduler (default: full)', 'full')
+  .option('--sync', 'Sync after scheduled collection')
+  .option('--raw-backup <path>', 'Mirror raw artifacts (data/reports/snapshots) into path')
+  .action(async (options) => {
     const spinner = ora('Running setup...').start();
 
     try {
-      const result = await runSetup();
+      const result = await runSetup({
+        automation: options.automation,
+        intervalSeconds: parseIntervalSeconds(options.interval),
+        runMode: options.mode,
+        postSync: Boolean(options.sync),
+        rawBackupPath: options.rawBackup,
+      });
 
       if (result.success && result.warnings.length === 0) {
         spinner.succeed(chalk.green('Setup complete'));
@@ -835,7 +919,13 @@ program
       }
 
       console.log(chalk.blue('\nNext steps:'));
-      console.log('  • Hook path (default): auto full collection runs after each Claude session');
+      if (options.automation === 'hook') {
+        console.log('  • Hook path (default): auto full collection runs after each Claude session');
+      } else if (options.automation === 'none') {
+        console.log('  • Automation disabled: run `cit collect` manually or configure later');
+      } else {
+        console.log(`  • Scheduler enabled (${options.automation}): periodic collection is handled by the scheduler`);
+      }
       console.log('  • Run: cit collect --all  (gather historical data)');
       console.log('  • Run: cit daemon start   (optional realtime monitoring, light mode)');
     } catch (error) {
@@ -916,17 +1006,43 @@ program
 
 program
   .command('daemon')
-  .description('Manage the auto-collection file watcher daemon')
-  .argument('<action>', 'start, stop, or status')
-  .action(async (action: string) => {
-    if (!['start', 'stop', 'status'].includes(action)) {
+  .description('Manage the auto-collection daemon and scheduler')
+  .argument('<action>', 'start, stop, status, enable, or disable')
+  .option('--scheduler <launchd|cron>', 'Scheduler type (for enable/disable)')
+  .option('--interval <duration>', 'Schedule interval (default: 30m)', '30m')
+  .option('--mode <full|light>', 'Collection mode for scheduler (default: full)', 'full')
+  .option('--sync', 'Sync after scheduled collection')
+  .option('--raw-backup <path>', 'Mirror raw artifacts (data/reports/snapshots) into path')
+  .action(async (action: string, options) => {
+    if (!['start', 'stop', 'status', 'enable', 'disable'].includes(action)) {
       console.error(chalk.red(`Unknown action: ${action}`));
-      console.log('Usage: cit daemon <start|stop|status>');
+      console.log('Usage: cit daemon <start|stop|status|enable|disable>');
       process.exit(1);
     }
 
     try {
-      await handleDaemonCommand(action as DaemonAction);
+      const daemonAction = action as DaemonAction;
+
+      let scheduler = options.scheduler as 'launchd' | 'cron' | undefined;
+      if (daemonAction === 'enable' && !scheduler) {
+        scheduler = process.platform === 'darwin' ? 'launchd' : 'cron';
+      }
+
+      if (scheduler && !['launchd', 'cron'].includes(scheduler)) {
+        throw new Error(`Invalid scheduler: ${options.scheduler}. Use launchd|cron.`);
+      }
+
+      if (options.mode && !['full', 'light'].includes(options.mode)) {
+        throw new Error(`Invalid mode: ${options.mode}. Use full|light.`);
+      }
+
+      await handleDaemonCommand(daemonAction, {
+        scheduler,
+        intervalSeconds: parseIntervalSeconds(options.interval),
+        runMode: options.mode,
+        postSync: Boolean(options.sync),
+        rawBackupPath: options.rawBackup,
+      });
     } catch (error) {
       console.error(chalk.red('Daemon command failed'));
       if (error instanceof Error) {

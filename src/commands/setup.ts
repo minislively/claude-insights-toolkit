@@ -10,6 +10,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { homedir } from 'os';
+import { enableSchedule } from '../services/daemon';
 
 const INSIGHTS_DIR = path.join(homedir(), 'claude-insights');
 const CLAUDE_DIR = path.join(homedir(), '.claude');
@@ -56,10 +57,20 @@ try {
 /**
  * Run the setup wizard.
  */
-export async function runSetup(): Promise<ISetupResult> {
+export interface SetupOptions {
+  automation?: 'hook' | 'launchd' | 'cron' | 'none';
+  intervalSeconds?: number;
+  runMode?: 'full' | 'light';
+  postSync?: boolean;
+  rawBackupPath?: string;
+}
+
+export async function runSetup(options: SetupOptions = {}): Promise<ISetupResult> {
   const steps: string[] = [];
   const errors: string[] = [];
   const warnings: string[] = [];
+
+  const automation = options.automation ?? 'hook';
 
   // Step 1: Detect platform
   const platform = process.platform;
@@ -74,6 +85,13 @@ export async function runSetup(): Promise<ISetupResult> {
     HOOKS_DIR,
   ];
 
+  if (automation === 'hook' && fs.existsSync(LEGACY_HOOK_SCRIPT)) {
+    warnings.push(
+      `Legacy hook detected: ${LEGACY_HOOK_SCRIPT} (possible duplicate collection trigger)`
+    );
+  }
+
+
   for (const dir of dirs) {
     try {
       fs.mkdirSync(dir, { recursive: true });
@@ -84,68 +102,85 @@ export async function runSetup(): Promise<ISetupResult> {
   }
   steps.push('Directory structure created: ~/claude-insights/{data,reports,snapshots}');
 
-  // Step 3: Generate and install hook script
-  try {
-    const script = generateHookScript();
-    fs.writeFileSync(HOOK_SCRIPT, script, { mode: 0o755 });
-    steps.push(`Hook script installed: ${HOOK_SCRIPT}`);
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    errors.push(`Failed to install hook: ${msg}`);
-  }
-
-  if (fs.existsSync(LEGACY_HOOK_SCRIPT)) {
-    warnings.push(
-      `Legacy hook detected: ${LEGACY_HOOK_SCRIPT} (possible duplicate collection trigger)`
-    );
-  }
-
-  // Step 4: Update settings.json
-  try {
-    let settings: Record<string, unknown> = {};
-
+  // Step 3: Generate/install automation
+  if (automation === 'hook') {
     try {
-      const content = fs.readFileSync(SETTINGS_FILE, 'utf-8');
-      settings = JSON.parse(content);
-    } catch {
-      // File doesn't exist or is invalid — start fresh
+      const script = generateHookScript();
+      fs.writeFileSync(HOOK_SCRIPT, script, { mode: 0o755 });
+      steps.push(`Hook script installed: ${HOOK_SCRIPT}`);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      errors.push(`Failed to install hook: ${msg}`);
     }
 
-    // Add hook configuration
-    if (!settings.hooks || typeof settings.hooks !== 'object') {
-      settings.hooks = {};
+    // Step 4: Update settings.json
+    try {
+      let settings: Record<string, unknown> = {};
+
+      try {
+        const content = fs.readFileSync(SETTINGS_FILE, 'utf-8');
+        settings = JSON.parse(content);
+      } catch {
+        // File doesn't exist or is invalid — start fresh
+      }
+
+      // Add hook configuration
+      if (!settings.hooks || typeof settings.hooks !== 'object') {
+        settings.hooks = {};
+      }
+
+      const hooks = settings.hooks as Record<string, unknown>;
+
+      // Register as UserPromptSubmit hook (safer than PostSession)
+      // Triggers on user input submission, providing reliable collection timing
+      if (!hooks.UserPromptSubmit || !Array.isArray(hooks.UserPromptSubmit)) {
+        hooks.UserPromptSubmit = [];
+      }
+
+      const userPromptSubmit = hooks.UserPromptSubmit as Array<Record<string, unknown>>;
+      const hookEntry = {
+        type: 'command',
+        command: `node ${HOOK_SCRIPT}`,
+        timeout: 5000, // Don't block Claude Code for too long
+      };
+
+      // Check if already registered
+      const alreadyRegistered = userPromptSubmit.some(
+        (h) => typeof h === 'object' && h.command && String(h.command).includes('cit-auto-collect')
+      );
+
+      if (!alreadyRegistered) {
+        userPromptSubmit.push(hookEntry);
+        fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+        steps.push('Hook registered in ~/.claude/settings.json (UserPromptSubmit)');
+      } else {
+        steps.push('Hook already registered in settings.json (skipped)');
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      errors.push(`Failed to update settings.json: ${msg}`);
+    }
+  } else if (automation === 'launchd' || automation === 'cron') {
+    warnings.push('Automation is being configured via scheduler; hook will not be installed by default. Ensure you only have one auto-collection trigger enabled.');
+    if (fs.existsSync(HOOK_SCRIPT) || fs.existsSync(LEGACY_HOOK_SCRIPT)) {
+      warnings.push('Existing hook scripts detected. If hook-based auto-collection is still enabled in ~/.claude/settings.json, disable it to avoid duplicate runs.');
     }
 
-    const hooks = settings.hooks as Record<string, unknown>;
+    const enabled = enableSchedule({
+      scheduler: automation,
+      intervalSeconds: options.intervalSeconds ?? 1800,
+      runMode: options.runMode ?? 'full',
+      postSync: options.postSync ?? false,
+      rawBackupPath: options.rawBackupPath,
+    });
 
-    // Register as UserPromptSubmit hook (safer than PostSession)
-    // Triggers on user input submission, providing reliable collection timing
-    if (!hooks.UserPromptSubmit || !Array.isArray(hooks.UserPromptSubmit)) {
-      hooks.UserPromptSubmit = [];
-    }
-
-    const userPromptSubmit = hooks.UserPromptSubmit as Array<Record<string, unknown>>;
-    const hookEntry = {
-      type: 'command',
-      command: `node ${HOOK_SCRIPT}`,
-      timeout: 5000, // Don't block Claude Code for too long
-    };
-
-    // Check if already registered
-    const alreadyRegistered = userPromptSubmit.some(
-      (h) => typeof h === 'object' && h.command && String(h.command).includes('cit-auto-collect')
-    );
-
-    if (!alreadyRegistered) {
-      userPromptSubmit.push(hookEntry);
-      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
-      steps.push('Hook registered in ~/.claude/settings.json (UserPromptSubmit)');
+    if (enabled.enabled) {
+      steps.push(`Scheduler enabled: ${automation}`);
     } else {
-      steps.push('Hook already registered in settings.json (skipped)');
+      errors.push(enabled.error || 'Failed to enable scheduler');
     }
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    errors.push(`Failed to update settings.json: ${msg}`);
+  } else {
+    steps.push('Automation skipped (none)');
   }
 
   // Step 5: Validate
@@ -157,17 +192,27 @@ export async function runSetup(): Promise<ISetupResult> {
     errors.push('Validation failed: data directory not found');
   }
 
-  if (fs.existsSync(HOOK_SCRIPT)) {
-    validations.push('Hook script exists');
+  if (automation === 'hook') {
+    if (fs.existsSync(HOOK_SCRIPT)) {
+      validations.push('Hook script exists');
+    } else {
+      errors.push('Validation failed: hook script not found');
+    }
   } else {
-    errors.push('Validation failed: hook script not found');
+    validations.push('Hook validation skipped');
   }
 
   if (validations.length > 0) {
     steps.push(`Validation passed: ${validations.join(', ')}`);
   }
 
-  steps.push('Collection roles: post-session hook is default full collection path; daemon is optional realtime monitoring only');
+  if (automation === 'hook') {
+    steps.push('Collection roles: post-session hook is default full collection path; daemon is optional realtime monitoring only');
+  } else if (automation === 'none') {
+    steps.push('Collection roles: automation disabled; run `cit collect` manually or configure automation later');
+  } else {
+    steps.push('Collection roles: scheduler is active collection path; avoid enabling hook/daemon simultaneously');
+  }
 
   return {
     success: errors.length === 0,

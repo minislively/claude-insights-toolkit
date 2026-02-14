@@ -36,6 +36,7 @@ describe('runHealthCheck', () => {
   const hookScript = path.join(home, '.claude', 'hooks', 'cit-auto-collect.js');
   const settingsFile = path.join(home, '.claude', 'settings.json');
   const daemonPidFile = path.join(home, 'claude-insights', '.daemon.pid');
+  const automationConfigFile = path.join(home, 'claude-insights', '.automation.json');
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -133,8 +134,34 @@ describe('runHealthCheck', () => {
 
     const result = await runHealthCheck();
 
-    const duplicateCheck = result.checks.find((c) => c.name === 'hook + daemon duplicate trigger risk');
+    const duplicateCheck = result.checks.find((c) => c.name === 'duplicate trigger risk (hook/daemon/scheduler)');
     expect(duplicateCheck?.status).toBe('WARN');
     expect(result.status).toBe('WARN');
+  });
+
+  it('includes scheduler in auto-collection status when automation config exists', async () => {
+    createAccessMock(
+      new Set([
+        sourceFacets,
+        sourceReport,
+        outputDir,
+        outputData,
+        outputReports,
+        todayDataArtifact,
+        todayReportArtifact,
+        todaySnapshotArtifact,
+        hookScript,
+        settingsFile,
+        automationConfigFile,
+      ]),
+    );
+
+    const result = await runHealthCheck();
+
+    const schedulerConfigCheck = result.checks.find((c) => c.name === 'auto-collection scheduler config');
+    expect(schedulerConfigCheck?.status).toBe('PASS');
+
+    const autoCollectionStatus = result.checks.find((c) => c.name === 'auto-collection status');
+    expect(autoCollectionStatus?.details).toContain('scheduler');
   });
 });
