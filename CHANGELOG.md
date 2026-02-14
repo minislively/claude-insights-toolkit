@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI command structure (collect, analyze, suggest, trend)
 - Documentation (README, CONTRIBUTING, LICENSE)
 - Project configuration (tsconfig, eslint, jest)
+- Scheduler-based auto-collection (launchd/cron) with config persisted in `~/claude-insights/.automation.json`
+- `cit setup --automation hook|launchd|cron|none` options for choosing a single automation trigger
+- `cit daemon enable|disable|status` scheduler management (alongside existing realtime watcher)
+- `cit health` checks for scheduler status and duplicate trigger risk across hook/daemon/scheduler
+- `cit collect --sync` and `--raw-backup <path>` post-collection pipeline options
 
 ### TODO
 - Implement data collection from ~/.claude/usage-data/facets/
