@@ -103,7 +103,7 @@ describe('runDoctorCheck', () => {
 
     const dedupCheck = result.checks.find(c => c.name === 'Data deduplication');
     expect(dedupCheck).toBeDefined();
-    expect(dedupCheck?.status).toBe('PASS'); // 25% duplication is < 30%
+    expect(dedupCheck?.status).toBe('WARN'); // 25% duplication is 10-30% range (WARN)
     expect(dedupCheck?.details).toContain('25%');
   });
 

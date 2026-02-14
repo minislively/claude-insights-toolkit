@@ -13,6 +13,7 @@ const INSIGHTS_DIR = path.join(homedir(), 'claude-insights');
 const CLAUDE_DIR = path.join(homedir(), '.claude');
 const HOOKS_DIR = path.join(CLAUDE_DIR, 'hooks');
 const HOOK_SCRIPT = path.join(HOOKS_DIR, 'cit-auto-collect.js');
+const LEGACY_HOOK_SCRIPT = path.join(HOOKS_DIR, 'insights-auto-collect.sh');
 const SETTINGS_FILE = path.join(CLAUDE_DIR, 'settings.json');
 
 describe('runSetup', () => {
@@ -20,8 +21,15 @@ describe('runSetup', () => {
     jest.clearAllMocks();
     (fs.mkdirSync as jest.Mock).mockReturnValue(undefined);
     (fs.writeFileSync as jest.Mock).mockReturnValue(undefined);
-    (fs.existsSync as jest.Mock).mockReturnValue(false);
     (fs.readFileSync as jest.Mock).mockReturnValue('{}');
+
+    // Mock existsSync to return true for validation paths, false for legacy hook
+    (fs.existsSync as jest.Mock).mockImplementation((filePath: string) => {
+      if (filePath === LEGACY_HOOK_SCRIPT) return false;
+      if (filePath === path.join(INSIGHTS_DIR, 'data')) return true;
+      if (filePath === HOOK_SCRIPT) return true;
+      return false;
+    });
   });
 
   it('should create directory structure', async () => {
@@ -53,19 +61,18 @@ describe('runSetup', () => {
     expect(result.success).toBe(true);
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       SETTINGS_FILE,
-      expect.stringContaining('"postSession"'),
-      undefined
+      expect.stringContaining('"UserPromptSubmit"')
     );
   });
 
   it('should skip hook registration if already registered', async () => {
     (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({
       hooks: {
-        postSession: [
+        UserPromptSubmit: [
           {
             type: 'command',
             command: `node ${HOOK_SCRIPT}`,
-            description: 'Auto-collect Claude insights data',
+            timeout: 5000,
           },
         ],
       },
@@ -80,7 +87,10 @@ describe('runSetup', () => {
   it('should detect legacy hook and warn', async () => {
     const LEGACY_HOOK = path.join(HOOKS_DIR, 'insights-auto-collect.sh');
     (fs.existsSync as jest.Mock).mockImplementation((filePath: string) => {
-      return filePath === LEGACY_HOOK;
+      if (filePath === LEGACY_HOOK) return true;
+      if (filePath === path.join(INSIGHTS_DIR, 'data')) return true;
+      if (filePath === HOOK_SCRIPT) return true;
+      return false;
     });
 
     const result = await runSetup();
@@ -93,6 +103,7 @@ describe('runSetup', () => {
     (fs.mkdirSync as jest.Mock).mockImplementation(() => {
       throw new Error('Permission denied');
     });
+    (fs.existsSync as jest.Mock).mockReturnValue(false); // Validation will fail
 
     const result = await runSetup();
 
@@ -101,10 +112,16 @@ describe('runSetup', () => {
   });
 
   it('should handle hook installation errors', async () => {
-    (fs.writeFileSync as jest.Mock).mockImplementation((path: string) => {
-      if (path === HOOK_SCRIPT) {
+    (fs.writeFileSync as jest.Mock).mockImplementation((filePath: string) => {
+      if (filePath === HOOK_SCRIPT) {
         throw new Error('Write failed');
       }
+    });
+    (fs.existsSync as jest.Mock).mockImplementation((filePath: string) => {
+      // Hook script won't exist if write failed
+      if (filePath === HOOK_SCRIPT) return false;
+      if (filePath === path.join(INSIGHTS_DIR, 'data')) return true;
+      return false;
     });
 
     const result = await runSetup();
@@ -123,8 +140,7 @@ describe('runSetup', () => {
     expect(result.success).toBe(true);
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       SETTINGS_FILE,
-      expect.any(String),
-      undefined
+      expect.any(String)
     );
   });
 
