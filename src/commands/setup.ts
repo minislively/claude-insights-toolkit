@@ -118,27 +118,28 @@ export async function runSetup(): Promise<ISetupResult> {
 
     const hooks = settings.hooks as Record<string, unknown>;
 
-    // Register as a post-session hook (PostToolUse on Stop)
-    if (!hooks.postSession || !Array.isArray(hooks.postSession)) {
-      hooks.postSession = [];
+    // Register as UserPromptSubmit hook (safer than PostSession)
+    // Triggers on user input submission, providing reliable collection timing
+    if (!hooks.UserPromptSubmit || !Array.isArray(hooks.UserPromptSubmit)) {
+      hooks.UserPromptSubmit = [];
     }
 
-    const postSession = hooks.postSession as Array<Record<string, unknown>>;
+    const userPromptSubmit = hooks.UserPromptSubmit as Array<Record<string, unknown>>;
     const hookEntry = {
       type: 'command',
       command: `node ${HOOK_SCRIPT}`,
-      description: 'Auto-collect Claude insights data',
+      timeout: 5000, // Don't block Claude Code for too long
     };
 
     // Check if already registered
-    const alreadyRegistered = postSession.some(
+    const alreadyRegistered = userPromptSubmit.some(
       (h) => typeof h === 'object' && h.command && String(h.command).includes('cit-auto-collect')
     );
 
     if (!alreadyRegistered) {
-      postSession.push(hookEntry);
+      userPromptSubmit.push(hookEntry);
       fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
-      steps.push('Hook registered in ~/.claude/settings.json');
+      steps.push('Hook registered in ~/.claude/settings.json (UserPromptSubmit)');
     } else {
       steps.push('Hook already registered in settings.json (skipped)');
     }
