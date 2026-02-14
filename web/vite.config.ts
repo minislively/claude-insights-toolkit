@@ -60,6 +60,24 @@ function insightsApiPlugin() {
         }
       })
 
+      server.middlewares.use('/api/overview', async (req: any, res: any) => {
+        try {
+          const url = new URL(req.url!, `http://${req.headers.host}`)
+          const days = parseInt(url.searchParams.get('days') || '30', 10)
+
+          const { handleOverview } = await import('../src/server/api-handlers')
+          const response = handleOverview(days)
+
+          res.statusCode = response.status
+          res.setHeader('Content-Type', response.contentType)
+          res.end(response.body)
+        } catch {
+          res.statusCode = 500
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'Failed to compute overview' }))
+        }
+      })
+
       server.middlewares.use('/api/reports', async (_req: any, res: any) => {
         const REPORTS_DIR = path.join(homedir(), 'claude-insights', 'reports')
         try {
