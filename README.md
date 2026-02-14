@@ -200,6 +200,19 @@ $ cit analyze --days 7
 ✨ Run 'cit suggest' to auto-generate CLAUDE.md updates
 ```
 
+### 📚 Tutorials & Documentation
+
+**Getting Started:**
+- [Tutorial 1: Getting Started](./docs/tutorials/01-getting-started.md) - Installation to first analysis (10 min)
+
+**Use Cases:**
+- [Personal Developer - Productivity Tracking](./docs/examples/personal-developer.md) - Track and improve your workflow
+
+**More tutorials coming soon:**
+- Tutorial 2: Web Dashboard Usage
+- Tutorial 3: 5 Analysis Features Deep Dive
+- Tutorial 4: Productivity Optimization Workflow
+
 ### 🛠️ Development Setup
 
 ```bash
@@ -412,6 +425,19 @@ $ cit analyze --days 7
 📈 트렌드: 지난주 대비 마찰 20% 감소
 ✨ 'cit suggest' 실행 시 CLAUDE.md 자동 업데이트 생성
 ```
+
+### 📚 튜토리얼 & 문서
+
+**시작하기:**
+- [튜토리얼 1: 시작하기](./docs/tutorials/01-getting-started.md) - 설치부터 첫 분석까지 (10분)
+
+**활용 사례:**
+- [개인 개발자 - 생산성 추적](./docs/examples/personal-developer.md) - 워크플로우 추적 및 개선
+
+**곧 추가될 튜토리얼:**
+- 튜토리얼 2: 웹 대시보드 사용법
+- 튜토리얼 3: 5대 분석 기능 심화
+- 튜토리얼 4: 생산성 최적화 워크플로우
 
 ### 🛠️ 개발 환경 설정
 
