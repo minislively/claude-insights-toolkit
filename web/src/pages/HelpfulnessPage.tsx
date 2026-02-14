@@ -6,6 +6,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/LoadingState'
 import { MetricCard } from '@/components/MetricCard'
 import { analyzeProductivity, getHelpfulnessScore, getSatisfactionRatio } from '@/lib/analyzers'
 import type { IHelpfulnessCorrelation } from '@shared/analyzers/productivity'
+import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
 
 export function HelpfulnessPage() {
   const { t } = useTranslation()
@@ -104,7 +105,8 @@ export function HelpfulnessPage() {
       {/* Helpfulness vs Outcome Correlation */}
       <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
         <h3 className="text-lg font-semibold text-white mb-4">Helpfulness vs Outcome Correlation</h3>
-        <div className="overflow-x-auto">
+        <HelpfulnessScatterChart correlations={result.helpfulnessCorrelation} />
+        <div className="overflow-x-auto mt-6">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-700 text-slate-400">
@@ -377,4 +379,75 @@ function analyzeSatisfactionCorrelation(data: import('@/types').IInsightsDay[]):
     satisfactionByOutcome,
     insights,
   }
+}
+
+function HelpfulnessScatterChart({ correlations }: { correlations: IHelpfulnessCorrelation[] }) {
+  const helpfulnessScoreMap: Record<string, number> = {
+    'very_unhelpful': 0,
+    'unhelpful': 1,
+    'somewhat_helpful': 2,
+    'helpful': 3,
+    'very_helpful': 4
+  }
+
+  const chartData = correlations.map(c => ({
+    name: c.helpfulness.replace(/_/g, ' '),
+    x: helpfulnessScoreMap[c.helpfulness] || 0,
+    y: c.successRate,
+    z: c.total, // Size represents number of sessions
+    satisfaction: c.avgSatisfactionRatio
+  }))
+
+  const COLORS: Record<number, string> = {
+    0: '#f43f5e', // very unhelpful - rose
+    1: '#f59e0b', // unhelpful - amber
+    2: '#6366f1', // somewhat helpful - indigo
+    3: '#10b981', // helpful - emerald
+    4: '#059669'  // very helpful - dark emerald
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+        <XAxis
+          type="number"
+          dataKey="x"
+          name="Helpfulness"
+          domain={[0, 4]}
+          ticks={[0, 1, 2, 3, 4]}
+          tickFormatter={(value) => ['Very\nUnhelpful', 'Unhelpful', 'Somewhat', 'Helpful', 'Very\nHelpful'][value] || ''}
+          stroke="#94a3b8"
+          fontSize={10}
+        />
+        <YAxis
+          type="number"
+          dataKey="y"
+          name="Success Rate"
+          unit="%"
+          stroke="#94a3b8"
+          fontSize={12}
+          domain={[0, 100]}
+        />
+        <ZAxis type="number" dataKey="z" range={[50, 400]} name="Sessions" />
+        <Tooltip
+          cursor={{ strokeDasharray: '3 3' }}
+          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+          labelStyle={{ color: '#cbd5e1' }}
+          itemStyle={{ color: '#e2e8f0' }}
+          formatter={(value: any, name?: string) => {
+            if (name === 'Success Rate') return [`${value}%`, name]
+            if (name === 'Sessions') return [value, name || '']
+            return [value, name || '']
+          }}
+        />
+        <Legend wrapperStyle={{ color: '#94a3b8', fontSize: '12px' }} />
+        <Scatter name="Helpfulness → Success" data={chartData}>
+          {chartData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={COLORS[entry.x] || '#6366f1'} />
+          ))}
+        </Scatter>
+      </ScatterChart>
+    </ResponsiveContainer>
+  )
 }

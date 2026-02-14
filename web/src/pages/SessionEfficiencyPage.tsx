@@ -5,6 +5,7 @@ import { PeriodSelector } from '@/components/PeriodSelector'
 import { LoadingState, ErrorState, EmptyState } from '@/components/LoadingState'
 import { MetricCard } from '@/components/MetricCard'
 import type { IInsightsDay, ISessionFacet } from '@/types'
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts'
 
 interface IEfficiencyResult {
   summary: string
@@ -111,30 +112,7 @@ export function SessionEfficiencyPage() {
       {/* Iteration Distribution */}
       <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
         <h3 className="text-lg font-semibold text-white mb-4">Iteration Count Distribution</h3>
-        <div className="space-y-3">
-          {result.iterationDistribution.map((range) => (
-            <div key={range.range} className="flex items-center gap-4">
-              <div className="w-24 text-slate-300 text-sm">{range.range}</div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-slate-400 text-xs">{range.count} sessions</span>
-                  <span className="text-slate-400 text-xs">{range.percentage}%</span>
-                </div>
-                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${
-                      range.range.includes('10+') ? 'bg-rose-500' :
-                      range.range.includes('7-9') ? 'bg-amber-500' :
-                      range.range.includes('4-6') ? 'bg-indigo-500' :
-                      'bg-emerald-500'
-                    }`}
-                    style={{ width: `${Math.max(range.percentage, 4)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <IterationDistributionChart distribution={result.iterationDistribution} />
       </div>
 
       {/* Inefficient Sessions */}
@@ -396,4 +374,40 @@ function analyzeSessionEfficiency(data: IInsightsDay[]): IEfficiencyResult {
     insights,
     recommendations,
   }
+}
+
+function IterationDistributionChart({ distribution }: { distribution: Array<{ range: string; count: number; percentage: number }> }) {
+  const chartData = distribution.map(d => ({
+    range: d.range,
+    count: d.count,
+    percentage: d.percentage
+  }))
+
+  const getBarColor = (range: string) => {
+    if (range.includes('10+')) return '#f43f5e' // rose - inefficient
+    if (range.includes('7-9')) return '#f59e0b' // amber - concerning
+    if (range.includes('4-6')) return '#6366f1' // indigo - moderate
+    return '#10b981' // emerald - efficient
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+        <XAxis dataKey="range" stroke="#94a3b8" fontSize={12} />
+        <YAxis stroke="#94a3b8" fontSize={12} label={{ value: 'Sessions', angle: -90, position: 'insideLeft', style: { fill: '#94a3b8' } }} />
+        <Tooltip
+          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+          labelStyle={{ color: '#cbd5e1' }}
+          itemStyle={{ color: '#e2e8f0' }}
+          formatter={(value: any, name?: string) => [value, name === 'count' ? 'Sessions' : (name || '')]}
+        />
+        <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+          {chartData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={getBarColor(entry.range)} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  )
 }
