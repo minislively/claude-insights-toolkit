@@ -1,5 +1,5 @@
 import simpleGit from 'simple-git';
-import { classifySyncError, initSync } from '../sync';
+import { classifySyncError, initSync, ensureGitRepo, addRemote } from '../sync';
 
 jest.mock('simple-git');
 jest.mock('child_process', () => {
@@ -115,5 +115,81 @@ describe('initSync', () => {
     expect(result.success).toBe(true);
     expect(mockGit.push).toHaveBeenCalledWith('origin', 'feature-sync', ['--set-upstream']);
     expect(result.steps).toContain('✓ Initial push complete (feature-sync)');
+  });
+});
+
+describe('ensureGitRepo', () => {
+  const mockGit = {
+    status: jest.fn(),
+    init: jest.fn(),
+    add: jest.fn(),
+    commit: jest.fn(),
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    simpleGitMock.mockReturnValue(mockGit);
+  });
+
+  it('returns true when git repo already exists', async () => {
+    mockGit.status.mockResolvedValue({ files: [] });
+
+    const result = await ensureGitRepo();
+
+    expect(result).toBe(true);
+    expect(mockGit.status).toHaveBeenCalled();
+    expect(mockGit.init).not.toHaveBeenCalled();
+  });
+
+  it('initializes repo when git status fails', async () => {
+    mockGit.status.mockRejectedValue(new Error('not a git repository'));
+    mockGit.init.mockResolvedValue(undefined);
+    mockGit.add.mockResolvedValue(undefined);
+    mockGit.commit.mockResolvedValue(undefined);
+
+    const result = await ensureGitRepo();
+
+    expect(result).toBe(true);
+    expect(mockGit.init).toHaveBeenCalled();
+    expect(mockGit.add).toHaveBeenCalledWith('.');
+    expect(mockGit.commit).toHaveBeenCalledWith(expect.stringContaining('Initial insights data'));
+  });
+});
+
+describe('addRemote', () => {
+  const mockGit = {
+    status: jest.fn(),
+    init: jest.fn(),
+    add: jest.fn(),
+    commit: jest.fn(),
+    getRemotes: jest.fn(),
+    remote: jest.fn(),
+    addRemote: jest.fn(),
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    simpleGitMock.mockReturnValue(mockGit);
+    mockGit.status.mockResolvedValue({});
+  });
+
+  it('adds remote when origin does not exist', async () => {
+    mockGit.getRemotes.mockResolvedValue([]);
+    mockGit.addRemote.mockResolvedValue(undefined);
+
+    await addRemote('https://github.com/test/repo.git');
+
+    expect(mockGit.addRemote).toHaveBeenCalledWith('origin', 'https://github.com/test/repo.git');
+    expect(mockGit.remote).not.toHaveBeenCalled();
+  });
+
+  it('updates remote URL when origin already exists', async () => {
+    mockGit.getRemotes.mockResolvedValue([{ name: 'origin', refs: {} }]);
+    mockGit.remote.mockResolvedValue(undefined);
+
+    await addRemote('https://github.com/test/new-repo.git');
+
+    expect(mockGit.remote).toHaveBeenCalledWith(['set-url', 'origin', 'https://github.com/test/new-repo.git']);
+    expect(mockGit.addRemote).not.toHaveBeenCalled();
   });
 });
