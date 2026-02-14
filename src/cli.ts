@@ -1113,5 +1113,36 @@ program
     }
   });
 
+/**
+ * Export command - Export analysis results to various formats
+ */
+program
+  .command('export')
+  .description('Export analysis results to CSV, HTML, or PDF')
+  .requiredOption('-f, --format <type>', 'Export format (csv, html, pdf)')
+  .requiredOption('-o, --output <path>', 'Output file path')
+  .option('-d, --days <number>', 'Number of days to include', '30')
+  .action(async (options) => {
+    const spinner = ora('Exporting data...').start();
+
+    try {
+      const { exportData } = await import('./commands/export');
+
+      await exportData({
+        format: options.format,
+        output: options.output,
+        days: parseInt(options.days),
+      });
+
+      spinner.succeed(chalk.green(`Exported to ${options.output}`));
+    } catch (error) {
+      spinner.fail(chalk.red('Export failed'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
 // Parse CLI arguments
 program.parse();
