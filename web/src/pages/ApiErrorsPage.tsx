@@ -24,7 +24,7 @@ export function ApiErrorsPage() {
   if (!result) return <EmptyState />
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="mx-auto max-w-7xl p-6 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -100,7 +100,7 @@ export function ApiErrorsPage() {
               ))}
             </div>
           ) : (
-            <p className="text-slate-400 text-sm">No API errors detected 🎉</p>
+            <p className="text-slate-400 text-sm">No API errors detected</p>
           )}
         </div>
 
@@ -110,7 +110,7 @@ export function ApiErrorsPage() {
           {result.errorTypes.length > 0 ? (
             <ErrorTypesPieChart errorTypes={result.errorTypes.slice(0, 8)} />
           ) : (
-            <p className="text-slate-400 text-sm">No API errors detected 🎉</p>
+            <p className="text-slate-400 text-sm">No API errors detected</p>
           )}
         </div>
       </div>
@@ -182,7 +182,7 @@ export function ApiErrorsPage() {
                   <h4 className="text-white font-medium">{rec.title}</h4>
                 </div>
                 <p className="text-slate-300 text-sm mb-2">{rec.description}</p>
-                <p className="text-slate-400 text-xs">💡 {rec.action}</p>
+                <p className="text-slate-400 text-xs">{rec.action}</p>
               </div>
             ))}
           </div>

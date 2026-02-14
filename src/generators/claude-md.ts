@@ -3,7 +3,7 @@
  * Generates actionable recommendations for CLAUDE.md based on bottleneck analysis
  */
 
-import { IBottleneckResult, IBottleneckPattern } from '../analyzers/bottleneck';
+import type { IBottleneckResult } from '../analyzers/bottleneck';
 
 export interface IClaudeMdSuggestion {
   title: string;

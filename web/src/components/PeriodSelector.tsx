@@ -18,7 +18,7 @@ export function PeriodSelector({ value, onChange, availableDays }: PeriodSelecto
   ]
 
   return (
-    <div className="flex gap-1 bg-slate-800 rounded-lg p-1">
+    <div className="flex flex-wrap gap-1 bg-slate-800/80 border border-slate-700 rounded-lg p-1">
       {PERIODS.map(({ days, label }) => {
         const disabled = availableDays !== undefined && days !== 0 && days > availableDays
         return (

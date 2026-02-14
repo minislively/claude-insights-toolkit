@@ -1,6 +1,6 @@
 /**
  * Daemon service — watches ~/.claude/usage-data/facets/ for new JSON files
- * and auto-collects them into ~/claude-insights/data/.
+ * and auto-collects them into the configured insights data directory.
  *
  * Uses chokidar for cross-platform file watching with write-completion detection.
  */
@@ -9,13 +9,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { homedir, platform } from 'os';
 import { execFileSync } from 'child_process';
+import { getInsightsPaths } from '../config/paths';
 
 const FACETS_DIR = path.join(homedir(), '.claude', 'usage-data', 'facets');
-const INSIGHTS_DIR = path.join(homedir(), 'claude-insights');
-const PID_FILE = path.join(INSIGHTS_DIR, '.daemon.pid');
-const LOG_FILE = path.join(INSIGHTS_DIR, 'daemon.log');
+const insightsPaths = getInsightsPaths();
+const INSIGHTS_DIR = insightsPaths.baseDir;
+const PID_FILE = insightsPaths.daemonPidFile;
+const LOG_FILE = insightsPaths.daemonLogFile;
 
-const AUTOMATION_CONFIG_FILE = path.join(INSIGHTS_DIR, '.automation.json');
+const AUTOMATION_CONFIG_FILE = insightsPaths.automationConfigFile;
 const AUTOMATION_LOG_FILE = path.join(INSIGHTS_DIR, 'automation.log');
 const LAUNCH_AGENTS_DIR = path.join(homedir(), 'Library', 'LaunchAgents');
 const LAUNCHD_LABEL = 'com.claude-insights.collect';

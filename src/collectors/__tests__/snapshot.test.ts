@@ -4,6 +4,8 @@ import { IReportData } from '../../parsers/report-html';
 
 // Mock fs and parseReportHtml
 jest.mock('fs', () => ({
+  existsSync: jest.fn(() => false),
+  readFileSync: jest.fn(() => ''),
   promises: {
     readFile: jest.fn(),
     readdir: jest.fn(),

@@ -2,8 +2,9 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { homedir } from 'os';
 import { getScheduleStatus } from '../services/daemon';
+import { getInsightsPaths } from '../config/paths';
 
-// NOTE: scheduler is configured via ~/claude-insights/.automation.json
+// NOTE: scheduler is configured via resolved insights base dir .automation.json file.
 
 type HealthStatus = 'PASS' | 'WARN' | 'FAIL';
 
@@ -21,15 +22,16 @@ export interface IHealthCheckResult {
 const HOME = homedir();
 const SOURCE_FACETS_PATH = path.join(HOME, '.claude', 'usage-data', 'facets');
 const SOURCE_REPORT_PATH = path.join(HOME, '.claude', 'usage-data', 'report.html');
-const OUTPUT_DIR = path.join(HOME, 'claude-insights');
-const OUTPUT_DATA_DIR = path.join(OUTPUT_DIR, 'data');
-const OUTPUT_REPORTS_DIR = path.join(OUTPUT_DIR, 'reports');
-const OUTPUT_SNAPSHOTS_DIR = path.join(OUTPUT_DIR, 'snapshots');
+const insightsPaths = getInsightsPaths();
+const OUTPUT_DIR = insightsPaths.baseDir;
+const OUTPUT_DATA_DIR = insightsPaths.dataDir;
+const OUTPUT_REPORTS_DIR = insightsPaths.reportsDir;
+const OUTPUT_SNAPSHOTS_DIR = insightsPaths.snapshotsDir;
 const HOOK_SCRIPT = path.join(HOME, '.claude', 'hooks', 'cit-auto-collect.js');
 const LEGACY_HOOK_SCRIPT = path.join(HOME, '.claude', 'hooks', 'insights-auto-collect.sh');
 const SETTINGS_FILE = path.join(HOME, '.claude', 'settings.json');
-const DAEMON_PID_FILE = path.join(HOME, 'claude-insights', '.daemon.pid');
-const AUTOMATION_CONFIG_FILE = path.join(HOME, 'claude-insights', '.automation.json');
+const DAEMON_PID_FILE = insightsPaths.daemonPidFile;
+const AUTOMATION_CONFIG_FILE = insightsPaths.automationConfigFile;
 
 async function exists(target: string): Promise<boolean> {
   try {

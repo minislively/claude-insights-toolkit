@@ -28,7 +28,8 @@ import { sync, pull, push, addRemote, removeRemote, listRemotes, getDeviceId } f
 
 // Import generators
 import { generateClaudeMdSuggestions, formatSuggestionsAsMarkdown, generateSuggestionSummary } from './generators/claude-md';
-import { generateAdvancedAdvisories, formatAdvisoriesAsMarkdown, generateAdvisorySummary } from './generators/claude-md-advanced';
+import { applyClaudeMdSuggestionsSafely } from './services/claude-md-manager';
+import { updateIssueLedgerFromBottlenecks } from './services/issue-ledger';
 
 // Import parsers
 import { loadLatestReport } from './parsers/report-html';
@@ -47,7 +48,7 @@ import { handleDaemonCommand, DaemonAction } from './commands/daemon';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { homedir } from 'os';
+import { getInsightsPaths } from './config/paths';
 
 const program = new Command();
 
@@ -80,11 +81,11 @@ function parseIntervalSeconds(input: string): number {
 }
 
 async function mirrorRawArtifacts(rawBackupPath: string): Promise<string[]> {
-  const sourceBase = path.join(homedir(), 'claude-insights');
+  const insightsPaths = getInsightsPaths();
   const targets: Array<{ name: string; source: string; dest: string }> = [
-    { name: 'data', source: path.join(sourceBase, 'data'), dest: path.join(rawBackupPath, 'data') },
-    { name: 'reports', source: path.join(sourceBase, 'reports'), dest: path.join(rawBackupPath, 'reports') },
-    { name: 'snapshots', source: path.join(sourceBase, 'snapshots'), dest: path.join(rawBackupPath, 'snapshots') },
+    { name: 'data', source: insightsPaths.dataDir, dest: path.join(rawBackupPath, 'data') },
+    { name: 'reports', source: insightsPaths.reportsDir, dest: path.join(rawBackupPath, 'reports') },
+    { name: 'snapshots', source: insightsPaths.snapshotsDir, dest: path.join(rawBackupPath, 'snapshots') },
   ];
 
   const copied: string[] = [];
@@ -102,6 +103,7 @@ async function mirrorRawArtifacts(rawBackupPath: string): Promise<string[]> {
 
   return copied;
 }
+
 
 program
   .name('cit')
@@ -272,6 +274,7 @@ program
   .option('-d, --days <number>', 'Days of data to analyze', '7')
   .option('-o, --output <path>', 'Output file path')
   .option('-a, --append', 'Append to existing CLAUDE.md')
+  .option('--apply [path]', 'Safely apply suggestions to CLAUDE.md with managed block and backup')
   .action(async (options) => {
     const spinner = ora('Generating suggestions...').start();
 
@@ -290,9 +293,29 @@ program
 
       console.log(generateSuggestionSummary(suggestions));
 
-      if (options.output) {
-        const markdown = formatSuggestionsAsMarkdown(suggestions);
+      const markdown = formatSuggestionsAsMarkdown(suggestions);
 
+      if (options.apply !== undefined) {
+        const target = typeof options.apply === 'string' && options.apply.trim().length > 0
+          ? options.apply
+          : path.join(process.cwd(), 'CLAUDE.md');
+
+        const result = await applyClaudeMdSuggestionsSafely(target, markdown);
+
+        const action = result.created
+          ? chalk.green('created')
+          : result.replaced
+            ? chalk.green('updated')
+            : chalk.green('appended');
+
+        console.log(chalk.blue(`\n✅ CLAUDE.md ${action}: ${target}`));
+        if (result.backupPath) {
+          console.log(chalk.gray(`   Backup: ${result.backupPath}`));
+        }
+        return;
+      }
+
+      if (options.output) {
         if (options.append) {
           const existing = await fs.readFile(options.output, 'utf-8').catch(() => '');
           await fs.writeFile(options.output, existing + '\n\n' + markdown);
@@ -304,10 +327,102 @@ program
       } else {
         console.log(chalk.bold('\n📝 CLAUDE.md Suggestions Preview:'));
         console.log(chalk.gray('━'.repeat(50)));
-        console.log(formatSuggestionsAsMarkdown(suggestions));
+        console.log(markdown);
       }
     } catch (error) {
       spinner.fail(chalk.red('Suggestion generation failed'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
+/**
+ * Loop command - One-click improvement loop
+ */
+program
+  .command('loop')
+  .description('Run one-click improvement loop from analysis to recommendations')
+  .option('-d, --days <number>', 'Days of data to analyze', '14')
+  .option('--apply [path]', 'Safely apply suggestions to CLAUDE.md (defaults to ./CLAUDE.md when no path is provided)')
+  .option('--json', 'Print machine-readable summary JSON')
+  .action(async (options) => {
+    const spinner = ora('Running improvement loop...').start();
+
+    try {
+      const days = parseInt(options.days, 10);
+      const data = await loadStoredData({ days });
+
+      if (data.length === 0) {
+        spinner.warn(chalk.yellow('No data found. Run `cit collect` first.'));
+        return;
+      }
+
+      const analysis = analyzeBottlenecks(data);
+      const issueLedger = await updateIssueLedgerFromBottlenecks(analysis);
+      const suggestions = generateClaudeMdSuggestions(analysis);
+      const markdown = formatSuggestionsAsMarkdown(suggestions);
+
+      let applyResult: {
+        target: string;
+        created: boolean;
+        replaced: boolean;
+        backupPath?: string;
+      } | undefined;
+
+      if (options.apply !== undefined) {
+        const target = typeof options.apply === 'string' && options.apply.trim().length > 0
+          ? path.resolve(options.apply)
+          : path.join(process.cwd(), 'CLAUDE.md');
+
+        const result = await applyClaudeMdSuggestionsSafely(target, markdown);
+        applyResult = {
+          target,
+          created: result.created,
+          replaced: result.replaced,
+          backupPath: result.backupPath,
+        };
+      }
+
+      const summary = {
+        days,
+        patternsDetected: analysis.patterns.length,
+        recommendations: suggestions.length,
+        issueLedgerDelta: {
+          added: issueLedger.added,
+          resolved: issueLedger.resolved,
+          reactivated: issueLedger.reactivated,
+          updated: issueLedger.updated,
+        },
+        applyResult,
+      };
+
+      spinner.succeed(chalk.green('Improvement loop complete'));
+
+      if (options.json) {
+        console.log(JSON.stringify(summary, null, 2));
+        return;
+      }
+
+      console.log(chalk.blue('\nLoop Summary:'));
+      console.log(`  • Patterns detected: ${chalk.bold(summary.patternsDetected)}`);
+      console.log(`  • Recommendations: ${chalk.bold(summary.recommendations)}`);
+      console.log(`  • Issue ledger delta: added=${summary.issueLedgerDelta.added}, resolved=${summary.issueLedgerDelta.resolved}, reactivated=${summary.issueLedgerDelta.reactivated}, updated=${summary.issueLedgerDelta.updated}`);
+
+      if (summary.applyResult) {
+        const applyState = summary.applyResult.created
+          ? 'created'
+          : summary.applyResult.replaced
+            ? 'replaced'
+            : 'updated';
+        console.log(`  • CLAUDE.md apply: ${applyState} (${summary.applyResult.target})`);
+        if (summary.applyResult.backupPath) {
+          console.log(`    backup: ${summary.applyResult.backupPath}`);
+        }
+      }
+    } catch (error) {
+      spinner.fail(chalk.red('Improvement loop failed'));
       if (error instanceof Error) {
         console.error(chalk.red(`Error: ${error.message}`));
       }
@@ -407,8 +522,7 @@ program
   .option('-d, --date <YYYY-MM-DD>', 'Open specific date report')
   .option('-l, --list', 'List all saved reports')
   .action(async (options) => {
-    const { homedir } = require('os');
-    const reportsPath = path.join(homedir(), 'claude-insights', 'reports');
+    const reportsPath = getInsightsPaths().reportsDir;
 
     try {
       if (options.list || !options.date) {
@@ -500,7 +614,7 @@ program
         if (result.error.errorCode === 'NO_REMOTE') {
           console.log(chalk.gray('Hint: configure with `cit remote add <url>`.'));
         } else if (result.error.errorCode === 'PULL_CONFLICT') {
-          console.log(chalk.gray('Hint: inspect conflicts with `git -C ~/claude-insights status`.'));
+          console.log(chalk.gray(`Hint: inspect conflicts with \`git -C ${getInsightsPaths().baseDir} status\`.`));
         } else if (result.error.errorCode === 'PUSH_REJECTED') {
           console.log(chalk.gray('Hint: pull latest changes before pushing again.'));
         } else if (result.error.errorCode === 'AUTH') {
@@ -587,7 +701,7 @@ remoteCmd
       console.log(chalk.green(`✅ Remote set to: ${url}`));
       console.log(chalk.blue('\nNext steps:'));
       console.log('  1. Run: cit sync');
-      console.log('  2. On other devices: git clone <url> ~/claude-insights && cit sync');
+      console.log(`  2. On other devices: git clone <url> ${getInsightsPaths().baseDir} && cit sync`);
     } catch (error) {
       console.error(chalk.red('Failed to add remote'));
       process.exit(1);
@@ -689,7 +803,7 @@ program
 
       if (result.success) {
         spinner.succeed(chalk.green('Clone complete!'));
-        console.log(chalk.blue('\nInsights data restored to: ~/claude-insights/'));
+        console.log(chalk.blue(`\nInsights data restored to: ${getInsightsPaths().baseDir}`));
         console.log(chalk.blue('\nNext steps:'));
         console.log('  • Run: cit status         (verify data)');
         console.log('  • Run: cit dashboard      (view dashboard)');
@@ -828,7 +942,7 @@ program
         console.log('  1. Run /insights in your Claude Code session');
         console.log('  2. Then run: cit collect');
         console.log(chalk.gray('\nReport locations checked:'));
-        console.log('  • ~/claude-insights/reports/report-*.html');
+        console.log(`  • ${getInsightsPaths().reportsDir}/report-*.html`);
         console.log('  • ~/.claude/usage-data/report.html');
         process.exit(1);
       }

@@ -94,7 +94,7 @@ export function ProfilePage() {
   )
 
   return (
-    <div className="p-8 space-y-8 max-w-6xl">
+    <div className="mx-auto max-w-7xl p-6 space-y-8">
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-white">{t('profile.title')}</h2>

@@ -3,7 +3,7 @@
  * Based on jq queries from scientist research
  */
 
-import { IInsightsDay, ISessionFacet, ICountObject, IDeduplicationStats } from '../types/insights';
+import type { IInsightsDay, ISessionFacet, IDeduplicationStats } from '../types/insights';
 import { deduplicateSessions, calculateDeduplicationStats } from '../utils/sessions';
 
 export interface IBottleneckResult {

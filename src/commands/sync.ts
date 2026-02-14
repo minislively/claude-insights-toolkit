@@ -4,14 +4,15 @@
 
 import simpleGit, { SimpleGit } from 'simple-git';
 import * as path from 'path';
-import { homedir, hostname } from 'os';
+import { hostname } from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
+import { getInsightsPaths } from '../config/paths';
 
 const execAsync = promisify(exec);
 
-const INSIGHTS_DIR = path.join(homedir(), 'claude-insights');
+const INSIGHTS_DIR = getInsightsPaths().baseDir;
 
 export type SyncErrorCode = 'NO_REMOTE' | 'PULL_CONFLICT' | 'PUSH_REJECTED' | 'AUTH' | 'UNKNOWN';
 

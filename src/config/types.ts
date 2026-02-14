@@ -2,6 +2,10 @@
  * Configuration system types
  */
 
+import { getInsightsPaths } from './paths';
+
+const defaultInsightsPaths = getInsightsPaths();
+
 export interface ICitConfig {
   collection?: ICollectionConfig;
   analysis?: IAnalysisConfig;
@@ -84,7 +88,7 @@ export const DEFAULT_CONFIG: Required<ICitConfig> = {
   collection: {
     autoCollect: true,
     schedule: 'daily',
-    dataPath: '~/claude-insights/data',
+    dataPath: defaultInsightsPaths.dataDir,
     retentionDays: 90,
     excludePatterns: [],
     mode: 'full',

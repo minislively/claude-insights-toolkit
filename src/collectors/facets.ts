@@ -5,15 +5,17 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { homedir } from 'os';
-import { IInsightsDay, ISessionFacet, ICostKpi } from '../types/insights';
+import type { IInsightsDay, ISessionFacet, ICostKpi } from '../types/insights';
 import { deduplicateDaySessions } from '../utils/sessions';
 import { createSnapshot } from './snapshot';
+import { getInsightsPaths } from '../config/paths';
 
 const FACETS_PATH = path.join(homedir(), '.claude', 'usage-data', 'facets');
 const REPORT_PATH = path.join(homedir(), '.claude', 'usage-data', 'report.html');
-const DEFAULT_OUTPUT_PATH = path.join(homedir(), 'claude-insights', 'data');
-const REPORTS_OUTPUT_PATH = path.join(homedir(), 'claude-insights', 'reports');
-const LOCK_DIR = path.join(homedir(), 'claude-insights', '.locks');
+const insightsPaths = getInsightsPaths();
+const DEFAULT_OUTPUT_PATH = insightsPaths.dataDir;
+const REPORTS_OUTPUT_PATH = insightsPaths.reportsDir;
+const LOCK_DIR = insightsPaths.locksDir;
 const FACETS_COLLECT_LOCK = path.join(LOCK_DIR, 'collect-facets.lock');
 const FACETS_COLLECT_STATE_PATH = path.join(LOCK_DIR, 'collect-facets.state.json');
 const DEFAULT_LIGHT_DEBOUNCE_MS = 5000;
@@ -21,7 +23,7 @@ const DEFAULT_LIGHT_DEBOUNCE_MS = 5000;
 export interface ICollectOptions {
   date?: string; // YYYY-MM-DD format, defaults to today
   collectAll?: boolean; // Collect all available dates
-  outputPath?: string; // Where to save, defaults to ~/claude-insights/data/
+  outputPath?: string; // Where to save, defaults to resolved insights data dir
   mode?: 'full' | 'light'; // defaults to full
   debounceMs?: number; // light mode only
 }

@@ -27,7 +27,7 @@ export function CategorySuccessPage() {
   const highPerformingCategories = result.categoryStats.filter(c => c.sessions >= 3 && c.successRate >= 70)
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="mx-auto max-w-7xl p-6 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

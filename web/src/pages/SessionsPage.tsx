@@ -59,7 +59,7 @@ export function SessionsPage() {
   const OUTCOMES = ['all', 'fully_achieved', 'mostly_achieved', 'partially_achieved', 'not_achieved', 'unclear_from_transcript']
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="mx-auto max-w-7xl p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">{t('sessions.title')}</h2>
@@ -69,18 +69,18 @@ export function SessionsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 items-center">
+      <div className="flex flex-wrap gap-3 items-center">
         <input
           type="text"
           placeholder={t('sessions.searchPlaceholder')}
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(0) }}
-          className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64"
+          className="bg-slate-800/80 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-72"
         />
         <select
           value={outcomeFilter}
           onChange={(e) => { setOutcomeFilter(e.target.value); setPage(0) }}
-          className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="bg-slate-800/80 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           {OUTCOMES.map(o => (
             <option key={o} value={o}>{o === 'all' ? t('sessions.allOutcomes') : t(`outcomes.${o}`)}</option>
@@ -163,11 +163,11 @@ function SessionRow({ session: s }: { session: ISessionFacet }) {
         <td className="py-3 px-4 text-slate-300 max-w-xs truncate">{s.underlying_goal.slice(0, 80)}</td>
         <td className="py-3 px-4">
           <span className={`inline-block px-2 py-1 rounded-md text-xs font-medium ${outcomeStyles[s.outcome] || outcomeStyles.unclear_from_transcript}`}>
-            {s.outcome.replace(/_/g, ' ')}
+            {t(`outcomes.${s.outcome}`)}
           </span>
         </td>
         <td className="py-3 px-4 text-slate-400 text-xs">{s.session_type.replace(/_/g, ' ')}</td>
-        <td className="py-3 px-4 text-slate-400 text-xs">{s.claude_helpfulness.replace(/_/g, ' ')}</td>
+        <td className="py-3 px-4 text-slate-400 text-xs">{t(`helpfulness.${s.claude_helpfulness}`)}</td>
         <td className="py-3 px-4 text-slate-400 text-xs">{frictionList.length > 0 ? frictionList.length + ' types' : '-'}</td>
       </tr>
       {expanded && (

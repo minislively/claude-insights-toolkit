@@ -6,6 +6,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { homedir } from 'os';
+import { getInsightsPaths } from '../config/paths';
 import type {
   IAdvisoryStore,
   IAdvisoryMetadata,
@@ -18,6 +19,8 @@ import type {
   IAdvisoryStorageConfig,
 } from '../types/advisory';
 import { DEFAULT_ADVISORY_CONFIG, PatternQuality } from '../types/advisory';
+
+const DEFAULT_ADVISORY_BASE_PATH = path.join(getInsightsPaths().baseDir, 'advisory');
 
 // ── Path Resolution ─────────────────────────────────────────────────
 
@@ -75,7 +78,7 @@ async function ensureDir(dirPath: string): Promise<void> {
 export async function loadAdvisoryStore(
   config: Partial<IAdvisoryStorageConfig> = {}
 ): Promise<IAdvisoryStore> {
-  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config };
+  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config, basePath: config.basePath ?? DEFAULT_ADVISORY_BASE_PATH };
   const storePath = getStoreFilePath(fullConfig);
 
   try {
@@ -133,7 +136,7 @@ export async function saveAdvisoryStore(
   store: IAdvisoryStore,
   config: Partial<IAdvisoryStorageConfig> = {}
 ): Promise<void> {
-  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config };
+  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config, basePath: config.basePath ?? DEFAULT_ADVISORY_BASE_PATH };
   const storePath = getStoreFilePath(fullConfig);
 
   // Ensure directory exists
@@ -157,7 +160,7 @@ export async function createAdvisoryHistory(
   store: IAdvisoryStore,
   config: Partial<IAdvisoryStorageConfig> = {}
 ): Promise<string> {
-  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config };
+  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config, basePath: config.basePath ?? DEFAULT_ADVISORY_BASE_PATH };
   const date = new Date().toISOString().split('T')[0];
   const historyPath = getHistoryFilePath(fullConfig, date);
 
@@ -177,7 +180,7 @@ export async function loadAdvisoryHistory(
   date: string,
   config: Partial<IAdvisoryStorageConfig> = {}
 ): Promise<IAdvisoryStore | null> {
-  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config };
+  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config, basePath: config.basePath ?? DEFAULT_ADVISORY_BASE_PATH };
   const historyPath = getHistoryFilePath(fullConfig, date);
 
   try {
@@ -197,7 +200,7 @@ export async function loadAdvisoryHistory(
 export async function listAdvisoryHistory(
   config: Partial<IAdvisoryStorageConfig> = {}
 ): Promise<string[]> {
-  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config };
+  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config, basePath: config.basePath ?? DEFAULT_ADVISORY_BASE_PATH };
   const historyDir = getHistoryDirPath(fullConfig);
 
   try {
@@ -220,7 +223,7 @@ export async function listAdvisoryHistory(
 export async function cleanupAdvisoryHistory(
   config: Partial<IAdvisoryStorageConfig> = {}
 ): Promise<number> {
-  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config };
+  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config, basePath: config.basePath ?? DEFAULT_ADVISORY_BASE_PATH };
   const historyDir = getHistoryDirPath(fullConfig);
 
   let deletedCount = 0;
@@ -266,7 +269,7 @@ export async function pruneAdvisoryStore(
   strategiesRemoved: number;
   recoveryPatternsRemoved: number;
 }> {
-  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config };
+  const fullConfig = { ...DEFAULT_ADVISORY_CONFIG, ...config, basePath: config.basePath ?? DEFAULT_ADVISORY_BASE_PATH };
   const maxAgeMs = fullConfig.maxPatternAgeDays * 24 * 60 * 60 * 1000;
   const now = new Date().getTime();
 

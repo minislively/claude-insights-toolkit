@@ -10,8 +10,11 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { URL } from 'url';
 import { execSync, exec } from 'child_process';
-import { handleData, handleDates, handleReports, handleReport, handleSnapshots, handleProfile, handleOverview } from '../server/api-handlers';
+import { handleData, handleDates, handleReports, handleReport, handleSnapshots, handleProfile, handleOverview, handleLoop } from '../server/api-handlers';
 import { serveStatic } from '../server/static';
+import { getInsightsPaths } from '../config/paths';
+
+const insightsPaths = getInsightsPaths();
 
 const WEB_DIST = path.join(__dirname, '..', '..', 'web', 'dist');
 const WEB_DIR = path.join(__dirname, '..', '..', 'web');
@@ -55,7 +58,7 @@ function openBrowser(url: string): void {
 /**
  * Route an incoming API request.
  */
-async function handleApiRequest(pathname: string, searchParams: URLSearchParams): Promise<{
+async function handleApiRequest(req: http.IncomingMessage, pathname: string, searchParams: URLSearchParams): Promise<{
   status: number;
   contentType: string;
   body: string;
@@ -89,6 +92,14 @@ async function handleApiRequest(pathname: string, searchParams: URLSearchParams)
   if (pathname === '/api/overview') {
     const days = parseInt(searchParams.get('days') || '30', 10);
     return handleOverview(days);
+  }
+
+  if (pathname === '/api/loop') {
+    if ((req.method || 'GET').toUpperCase() !== 'POST') {
+      return { status: 405, contentType: 'application/json', body: JSON.stringify({ error: 'Method not allowed' }) };
+    }
+
+    return await handleLoop(req as any);
   }
 
   return { status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) };
@@ -130,7 +141,7 @@ export async function startDashboard(options: { port: number; open: boolean; dev
 
     try {
       if (pathname.startsWith('/api/')) {
-        const result = await handleApiRequest(pathname, url.searchParams);
+        const result = await handleApiRequest(req, pathname, url.searchParams);
         res.writeHead(result.status, { 'Content-Type': result.contentType });
         res.end(result.body);
       } else {
@@ -147,7 +158,7 @@ export async function startDashboard(options: { port: number; open: boolean; dev
   server.listen(options.port, () => {
     const url = `http://localhost:${options.port}`;
     console.log(`\n✨ Dashboard running at: ${url}`);
-    console.log('📊 Insights data: ~/claude-insights/data');
+    console.log(`📊 Insights data: ${insightsPaths.dataDir}`);
     console.log('⏹  Press Ctrl+C to stop.\n');
 
     if (options.open) {

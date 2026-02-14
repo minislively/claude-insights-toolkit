@@ -6,19 +6,41 @@ import { TrendLineChart } from '@/components/charts/TrendLineChart'
 import { LoadingState, ErrorState, EmptyState } from '@/components/LoadingState'
 
 const TREND_ICONS: Record<string, string> = {
-  increasing: '📈',
-  decreasing: '📉',
-  stable: '➡️',
+  increasing: '↑',
+  decreasing: '↓',
+  stable: '→',
+}
+
+function getTrendColor(metric: string, t: (key: string) => string): string {
+  const normalized = metric.toLowerCase()
+
+  if (
+    normalized === t('trends.dailySessions').toLowerCase() ||
+    normalized.includes('daily') ||
+    normalized.includes('session')
+  ) {
+    return '#6366f1'
+  }
+
+  if (
+    normalized === t('trends.successRate').toLowerCase() ||
+    normalized.includes('success')
+  ) {
+    return '#10b981'
+  }
+
+  if (
+    normalized === t('trends.apiBlockedRate').toLowerCase() ||
+    normalized.includes('api')
+  ) {
+    return '#ef4444'
+  }
+
+  return '#6366f1'
 }
 
 export function TrendsPage() {
   const { t } = useTranslation()
-
-  const TREND_COLORS: Record<string, string> = {
-    [t('trends.dailySessions')]: '#6366f1',
-    [t('trends.successRate')]: '#10b981',
-    [t('trends.apiBlockedRate')]: '#ef4444',
-  }
   const [days, setDays] = useState(30)
   const { data, loading, error, refetch } = useInsightsData(days)
   const result = useTrends(data)
@@ -28,7 +50,7 @@ export function TrendsPage() {
   if (data.length === 0) return <EmptyState />
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="mx-auto max-w-7xl p-6 space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">{t('trends.title')}</h2>
@@ -59,7 +81,7 @@ export function TrendsPage() {
           </div>
           <TrendLineChart
             data={trend.dataPoints}
-            color={TREND_COLORS[trend.metric] || '#6366f1'}
+            color={getTrendColor(trend.metric, t)}
             label={trend.metric}
             valueFormatter={trend.metric === t('trends.successRate') || trend.metric === t('trends.apiBlockedRate')
               ? (v) => `${v}%`

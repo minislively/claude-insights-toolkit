@@ -20,17 +20,17 @@ const trendColors = { up: 'text-emerald-400', down: 'text-rose-400', stable: 'te
 
 export function MetricCard({ title, value, subtitle, trend, trendValue, color = 'indigo' }: MetricCardProps) {
   return (
-    <div className={`rounded-xl border p-6 ${colorMap[color]}`}>
-      <p className="text-sm text-slate-400 mb-1">{title}</p>
-      <div className="flex items-baseline gap-2">
-        <p className="text-3xl font-bold text-white">{value}</p>
+    <div className={`rounded-xl border p-5 ${colorMap[color]}`}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{title}</p>
         {trend && trendValue && (
-          <span className={`text-sm font-medium ${trendColors[trend]}`}>
+          <span className={`text-xs font-semibold ${trendColors[trend]}`}>
             {trendIcons[trend]} {trendValue}
           </span>
         )}
       </div>
-      {subtitle && <p className="text-sm text-slate-500 mt-1">{subtitle}</p>}
+      <p className="mt-3 text-2xl font-semibold leading-none text-white lg:text-3xl">{value}</p>
+      {subtitle && <p className="mt-2 text-xs text-slate-500">{subtitle}</p>}
     </div>
   )
 }

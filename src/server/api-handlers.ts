@@ -6,14 +6,23 @@
  */
 
 import * as fs from 'fs';
+import * as fsp from 'fs/promises';
 import * as path from 'path';
-import { homedir } from 'os';
+import { createHash, randomUUID } from 'crypto';
 import { deduplicateSessions } from '../utils/sessions';
+import { getInsightsPaths } from '../config/paths';
 import type { IInsightsDay, ISessionFacet, ISnapshot } from '../types/insights';
+import { loadStoredData } from '../collectors/facets';
+import { analyzeBottlenecks } from '../analyzers/bottleneck';
+import { getBottleneckIssueKey, updateIssueLedgerFromBottlenecks } from '../services/issue-ledger';
+import { generateClaudeMdSuggestions, formatSuggestionsAsMarkdown } from '../generators/claude-md';
+import { applyClaudeMdSuggestionsSafely } from '../services/claude-md-manager';
 
-const DATA_DIR = path.join(homedir(), 'claude-insights', 'data');
-const REPORTS_DIR = path.join(homedir(), 'claude-insights', 'reports');
-const SNAPSHOTS_DIR = path.join(homedir(), 'claude-insights', 'snapshots');
+const insightsPaths = getInsightsPaths();
+const DATA_DIR = insightsPaths.dataDir;
+const REPORTS_DIR = insightsPaths.reportsDir;
+const SNAPSHOTS_DIR = insightsPaths.snapshotsDir;
+const LOOP_RUNS_DIR = path.join(insightsPaths.baseDir, 'loop-runs');
 
 export interface IApiResponse {
   status: number;
@@ -21,8 +30,300 @@ export interface IApiResponse {
   body: string;
 }
 
+export interface ILoopRunArtifacts {
+  runId: string;
+  generatedAt: string;
+  issueKeys: string[];
+  patternKeys: string[];
+  recommendationTitles: string[];
+  patternSignature: string;
+  recommendationSignature: string;
+  artifactDir?: string;
+  metrics: {
+    totalSessions: number;
+    successRate: number;
+    apiBlockedRate: number;
+    wrongApproachRate: number;
+    contextOverflowRate: number;
+  };
+}
+
+export interface ILoopCompare {
+  deltas: {
+    patternsDetected: number;
+    recommendations: number;
+    issueLedger: {
+      added: number;
+      resolved: number;
+      reactivated: number;
+      updated: number;
+    };
+  };
+  improvements: string[];
+  regressions: string[];
+}
+
+export interface ILoopSummary {
+  days: number;
+  patternsDetected: number;
+  recommendations: number;
+  issueLedgerDelta: {
+    added: number;
+    resolved: number;
+    reactivated: number;
+    updated: number;
+  };
+  runArtifacts: ILoopRunArtifacts;
+  compare?: ILoopCompare;
+  applyResult?: {
+    target: string;
+    created: boolean;
+    replaced: boolean;
+    backupPath?: string;
+  };
+}
+
 function jsonResponse(data: unknown, status = 200): IApiResponse {
   return { status, contentType: 'application/json', body: JSON.stringify(data) };
+}
+
+async function readRequestBodyJson<T>(req: { on: (event: string, cb: (chunk: any) => void) => void }): Promise<T> {
+  return await new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (chunk: any) => {
+      body += String(chunk);
+    });
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(body || '{}') as T);
+      } catch {
+        reject(new Error('Invalid JSON body'));
+      }
+    });
+    req.on('error', () => reject(new Error('Failed to read request body')));
+  });
+}
+
+function isPathInsideCwd(targetPath: string): boolean {
+  const cwd = process.cwd();
+  const resolved = path.resolve(targetPath);
+  const rel = path.relative(cwd, resolved);
+  return rel === '' || (!rel.startsWith('..' + path.sep) && rel !== '..');
+}
+
+function resolveAllowedApplyTarget(applyPath: string | undefined | null): string | null {
+  const defaultClaudeMd = path.resolve(process.cwd(), 'CLAUDE.md');
+
+  if (!applyPath || String(applyPath).trim().length === 0) {
+    return defaultClaudeMd;
+  }
+
+  const resolved = path.resolve(String(applyPath));
+  if (resolved === defaultClaudeMd) {
+    return resolved;
+  }
+
+  if (!isPathInsideCwd(resolved)) {
+    return null;
+  }
+
+  return resolved;
+}
+
+function sha256(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function uniqueSorted(values: string[]): string[] {
+  return Array.from(new Set(values)).sort();
+}
+
+function getLoopImprovementsOrRegressions(current: ILoopSummary, previous: ILoopSummary | null): { improvements: string[]; regressions: string[] } {
+  if (!previous) {
+    return { improvements: [], regressions: [] };
+  }
+
+  const improvements: string[] = [];
+  const regressions: string[] = [];
+
+  if (current.patternsDetected < previous.patternsDetected) improvements.push('patterns');
+  if (current.patternsDetected > previous.patternsDetected) regressions.push('patterns');
+
+  if (current.recommendations < previous.recommendations) improvements.push('recommendations');
+  if (current.recommendations > previous.recommendations) regressions.push('recommendations');
+
+  const curMetrics = current.runArtifacts.metrics;
+  const prevMetrics = previous.runArtifacts.metrics;
+
+  if (curMetrics.successRate > prevMetrics.successRate) improvements.push('success_rate');
+  if (curMetrics.successRate < prevMetrics.successRate) regressions.push('success_rate');
+
+  if (curMetrics.apiBlockedRate < prevMetrics.apiBlockedRate) improvements.push('api_blocked_rate');
+  if (curMetrics.apiBlockedRate > prevMetrics.apiBlockedRate) regressions.push('api_blocked_rate');
+
+  if (curMetrics.wrongApproachRate < prevMetrics.wrongApproachRate) improvements.push('wrong_approach_rate');
+  if (curMetrics.wrongApproachRate > prevMetrics.wrongApproachRate) regressions.push('wrong_approach_rate');
+
+  if (curMetrics.contextOverflowRate < prevMetrics.contextOverflowRate) improvements.push('context_overflow_rate');
+  if (curMetrics.contextOverflowRate > prevMetrics.contextOverflowRate) regressions.push('context_overflow_rate');
+
+  const currentPatterns = new Set(current.runArtifacts.patternKeys);
+  const previousPatterns = new Set(previous.runArtifacts.patternKeys);
+
+  const removedPatterns = Array.from(previousPatterns).filter((pattern) => !currentPatterns.has(pattern));
+  const addedPatterns = Array.from(currentPatterns).filter((pattern) => !previousPatterns.has(pattern));
+
+  if (removedPatterns.length > 0) improvements.push('pattern_set');
+  if (addedPatterns.length > 0) regressions.push('pattern_set');
+
+  return { improvements, regressions };
+}
+
+async function readPreviousLoopSummary(): Promise<ILoopSummary | null> {
+  try {
+    const entries = await fsp.readdir(LOOP_RUNS_DIR, { withFileTypes: true });
+    const directories = entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort()
+      .reverse();
+
+    for (const dirName of directories) {
+      const summaryPath = path.join(LOOP_RUNS_DIR, dirName, 'summary.json');
+      try {
+        const raw = await fsp.readFile(summaryPath, 'utf-8');
+        return JSON.parse(raw) as ILoopSummary;
+      } catch {
+        continue;
+      }
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function persistLoopRunArtifacts(summary: ILoopSummary, markdown: string): Promise<void> {
+  const artifactDir = path.join(LOOP_RUNS_DIR, summary.runArtifacts.runId);
+  await fsp.mkdir(artifactDir, { recursive: true });
+
+  summary.runArtifacts.artifactDir = artifactDir;
+
+  const summaryPath = path.join(artifactDir, 'summary.json');
+  const suggestionsPath = path.join(artifactDir, 'suggestions.md');
+
+  await fsp.writeFile(summaryPath, JSON.stringify(summary, null, 2), 'utf-8');
+  await fsp.writeFile(suggestionsPath, markdown, 'utf-8');
+}
+
+async function runLoopFlow(days: number, apply: boolean, applyPath?: string | null): Promise<ILoopSummary> {
+  const data = await loadStoredData({ days });
+  if (data.length === 0) {
+    return {
+      days,
+      patternsDetected: 0,
+      recommendations: 0,
+      issueLedgerDelta: { added: 0, resolved: 0, reactivated: 0, updated: 0 },
+      runArtifacts: {
+        runId: randomUUID(),
+        generatedAt: new Date().toISOString(),
+        issueKeys: [],
+        patternKeys: [],
+        recommendationTitles: [],
+        patternSignature: sha256(''),
+        recommendationSignature: sha256(''),
+        metrics: {
+          totalSessions: 0,
+          successRate: 0,
+          apiBlockedRate: 0,
+          wrongApproachRate: 0,
+          contextOverflowRate: 0,
+        },
+      },
+    };
+  }
+
+  const analysis = analyzeBottlenecks(data);
+  const ledgerDelta = await updateIssueLedgerFromBottlenecks(analysis);
+  const suggestions = generateClaudeMdSuggestions(analysis);
+  const markdown = formatSuggestionsAsMarkdown(suggestions);
+
+  const previousSummary = await readPreviousLoopSummary();
+
+  const issueKeys = uniqueSorted(analysis.patterns.map(getBottleneckIssueKey));
+  const patternKeys = uniqueSorted(analysis.patterns.map(p => p.pattern));
+  const recommendationTitles = uniqueSorted(suggestions.map(s => s.title));
+  const patternSignature = sha256(patternKeys.join('\n'));
+  const recommendationSignature = sha256(recommendationTitles.join('\n'));
+
+  const summary: ILoopSummary = {
+    days,
+    patternsDetected: analysis.patterns.length,
+    recommendations: suggestions.length,
+    issueLedgerDelta: {
+      added: ledgerDelta.added,
+      resolved: ledgerDelta.resolved,
+      reactivated: ledgerDelta.reactivated,
+      updated: ledgerDelta.updated,
+    },
+    runArtifacts: {
+      runId: randomUUID(),
+      generatedAt: analysis.generatedAt,
+      issueKeys,
+      patternKeys,
+      recommendationTitles,
+      patternSignature,
+      recommendationSignature,
+      metrics: {
+        totalSessions: analysis.metrics.totalSessions,
+        successRate: analysis.metrics.successRate,
+        apiBlockedRate: analysis.metrics.apiBlockedRate,
+        wrongApproachRate: analysis.metrics.wrongApproachRate,
+        contextOverflowRate: analysis.metrics.contextOverflowRate,
+      },
+    },
+  };
+
+  if (previousSummary) {
+    const { improvements, regressions } = getLoopImprovementsOrRegressions(summary, previousSummary);
+    summary.compare = {
+      deltas: {
+        patternsDetected: summary.patternsDetected - previousSummary.patternsDetected,
+        recommendations: summary.recommendations - previousSummary.recommendations,
+        issueLedger: {
+          added: summary.issueLedgerDelta.added - previousSummary.issueLedgerDelta.added,
+          resolved: summary.issueLedgerDelta.resolved - previousSummary.issueLedgerDelta.resolved,
+          reactivated: summary.issueLedgerDelta.reactivated - previousSummary.issueLedgerDelta.reactivated,
+          updated: summary.issueLedgerDelta.updated - previousSummary.issueLedgerDelta.updated,
+        },
+      },
+      improvements,
+      regressions,
+    };
+  }
+
+  if (apply) {
+    const target = resolveAllowedApplyTarget(applyPath);
+    if (!target) {
+      throw new Error('Invalid applyPath');
+    }
+    const result = await applyClaudeMdSuggestionsSafely(target, markdown);
+    summary.applyResult = {
+      target,
+      created: result.created,
+      replaced: result.replaced,
+      backupPath: result.backupPath,
+    };
+  }
+
+  try {
+    await persistLoopRunArtifacts(summary, markdown);
+  } catch {
+    // ignore artifact persistence failures
+  }
+
+  return summary;
 }
 
 function errorResponse(message: string, status = 500): IApiResponse {
@@ -460,5 +761,37 @@ export async function handleProfile(): Promise<IApiResponse> {
     return jsonResponse(profile);
   } catch {
     return errorResponse('Failed to generate profile');
+  }
+}
+
+/**
+ * POST /api/loop
+ *
+ * Body: { days?: number; apply?: boolean; applyPath?: string }
+ */
+export async function handleLoop(req: any): Promise<IApiResponse> {
+  try {
+    const body = await readRequestBodyJson<{ days?: number; apply?: boolean; applyPath?: string }>(req);
+    const days = Number.isFinite(body.days) ? Math.max(1, Math.floor(body.days as number)) : 14;
+    const apply = Boolean(body.apply);
+
+    if (apply) {
+      const target = resolveAllowedApplyTarget(body.applyPath);
+      if (!target) {
+        return errorResponse('Invalid applyPath', 400);
+      }
+
+      const summary = await runLoopFlow(days, true, target);
+      return jsonResponse(summary);
+    }
+
+    const summary = await runLoopFlow(days, false);
+    return jsonResponse(summary);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to run loop';
+    if (message.toLowerCase().includes('invalid json')) {
+      return errorResponse('Invalid JSON body', 400);
+    }
+    return errorResponse(message, 500);
   }
 }

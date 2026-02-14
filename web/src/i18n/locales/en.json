@@ -7,6 +7,11 @@
     "reports": "Reports",
     "profile": "Profile",
     "history": "History",
+    "apiErrors": "API Errors",
+    "sessionEfficiency": "Session Efficiency",
+    "categorySuccess": "Category Success",
+    "helpfulness": "Helpfulness",
+    "timePatterns": "Time Patterns",
     "insights": "Productivity Insights"
   },
   "navGroups": {
@@ -46,7 +51,10 @@
     "contextOverflow": "Context Overflow",
     "fullyMostly": "Fully + Mostly Achieved",
     "sessionsWithApiErrors": "Sessions with API errors",
-    "requiredRework": "Required rework"
+    "requiredRework": "Required rework",
+    "estimatedCost": "Estimated Cost",
+    "costPerSuccess": "Cost per Success",
+    "iterativeRefinement": "Iterative Refinement"
   },
   "overview": {
     "title": "Overview",
@@ -61,7 +69,12 @@
     "type": "Type",
     "helpfulnessDistribution": "Helpfulness Distribution",
     "sessionTypeDistribution": "Session Type Distribution",
-    "topCategories": "Top Goal Categories"
+    "topCategories": "Top Goal Categories",
+    "allPeriodFallback": "All period falls back to last 30 days for overview KPIs.",
+    "efficiencySummary": "Efficiency Summary",
+    "avg": "Avg",
+    "median": "Median",
+    "p90": "P90"
   },
   "sessions": {
     "title": "Sessions",
@@ -83,7 +96,52 @@
     "highSeveritySessions": "High Severity Sessions",
     "severityScore": "Severity Score",
     "frictionTextPatterns": "Common Friction Patterns",
-    "occurrences": "occurrences"
+    "occurrences": "occurrences",
+    "improveLoop": {
+      "title": "Improve workflow",
+      "subtitle": "Run an actionable loop based on your bottleneck patterns",
+      "topPatterns": "Top bottleneck patterns",
+      "runButton": "Run improve loop",
+      "status": {
+        "idle": "Idle",
+        "running": "Running…",
+        "success": "Success",
+        "error": "Error"
+      },
+      "summary": {
+        "patternsCount": "Patterns",
+        "recommendationsCount": "Recommendations",
+        "issueLedgerDelta": "Issue ledger delta",
+        "reactivated": "Reactivated",
+        "runId": "Run ID",
+        "generatedAt": "Generated at",
+        "claudeMdApply": "CLAUDE.md apply",
+        "created": "created",
+        "updated": "updated",
+        "applied": "applied"
+      },
+      "history": {
+        "title": "Loop history",
+        "empty": "No runs yet.",
+        "runAt": "Run at",
+        "days": "Days",
+        "patterns": "Patterns",
+        "recommendations": "Recommendations",
+        "issueLedgerDelta": "Issue ledger delta",
+        "reactivated": "Reactivated"
+      },
+      "trend": {
+        "improved": "Improved",
+        "regressed": "Regressed",
+        "patterns": "Patterns",
+        "recommendations": "Recommendations",
+        "successRate": "Success rate",
+        "apiBlockedRate": "API blocked rate",
+        "wrongApproachRate": "Wrong approach rate",
+        "contextOverflowRate": "Context overflow rate",
+        "patternSet": "Pattern set"
+      }
+    }
   },
   "trends": {
     "title": "Trends",

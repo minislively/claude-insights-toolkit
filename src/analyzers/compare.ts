@@ -4,11 +4,12 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { homedir } from 'os';
 import { IInsightsDay, ISessionFacet } from '../types/insights';
+import { getInsightsPaths } from '../config/paths';
 
-const DATA_PATH = path.join(homedir(), 'claude-insights', 'data');
-const REPORTS_PATH = path.join(homedir(), 'claude-insights', 'reports');
+const insightsPaths = getInsightsPaths();
+const DATA_PATH = insightsPaths.dataDir;
+const REPORTS_PATH = insightsPaths.reportsDir;
 
 export interface IMetricsSnapshot {
   date: string;

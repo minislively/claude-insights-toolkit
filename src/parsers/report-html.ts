@@ -9,6 +9,7 @@ import * as cheerio from 'cheerio';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { homedir } from 'os';
+import { getInsightsPaths } from '../config/paths';
 
 // ---------------------------------------------------------------------------
 // Interfaces
@@ -543,14 +544,14 @@ export function parseReportHtml(html: string): IReportData {
  * Locate and load the most recent report.html file.
  *
  * Search order:
- *   1. ~/claude-insights/reports/  (most recent report-*.html by name)
+ *   1. configured insights reports directory (most recent report-*.html by name)
  *   2. ~/.claude/usage-data/report.html
  *
  * Returns null if no report file is found.
  */
 export async function loadLatestReport(): Promise<IReportData | null> {
-  // 1. Check ~/claude-insights/reports/ for the most recent file
-  const reportsDir = path.join(homedir(), 'claude-insights', 'reports');
+  // 1. Check configured insights reports directory for the most recent file
+  const reportsDir = getInsightsPaths().reportsDir;
   try {
     const files = await fs.readdir(reportsDir);
     const reportFiles = files

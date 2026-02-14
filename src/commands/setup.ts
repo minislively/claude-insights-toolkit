@@ -1,7 +1,7 @@
 /**
  * Setup command — auto-configure data collection for Claude Code.
  *
- * 1. Creates ~/claude-insights/ directory structure
+ * 1. Creates configured insights directory structure
  * 2. Installs a Claude Code hook that triggers collection after each session
  * 3. Updates ~/.claude/settings.json to register the hook
  * 4. Validates the setup
@@ -11,8 +11,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { homedir } from 'os';
 import { enableSchedule } from '../services/daemon';
+import { getInsightsPaths } from '../config/paths';
 
-const INSIGHTS_DIR = path.join(homedir(), 'claude-insights');
+const INSIGHTS_DIR = getInsightsPaths().baseDir;
 const CLAUDE_DIR = path.join(homedir(), '.claude');
 const HOOKS_DIR = path.join(CLAUDE_DIR, 'hooks');
 const HOOK_SCRIPT = path.join(HOOKS_DIR, 'cit-auto-collect.js');
@@ -100,7 +101,7 @@ export async function runSetup(options: SetupOptions = {}): Promise<ISetupResult
       errors.push(`Failed to create ${dir}: ${msg}`);
     }
   }
-  steps.push('Directory structure created: ~/claude-insights/{data,reports,snapshots}');
+  steps.push(`Directory structure created: ${INSIGHTS_DIR}/{data,reports,snapshots}`);
 
   // Step 3: Generate/install automation
   if (automation === 'hook') {

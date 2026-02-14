@@ -41,6 +41,7 @@ export function OverviewPage() {
 
   const recentSessions = useMemo(() => {
     return [...allSessions]
+      .sort((a, b) => b.session_id.localeCompare(a.session_id))
       .slice(0, 5)
       .map(s => ({
         id: s.session_id.slice(0, 8),
@@ -62,36 +63,36 @@ export function OverviewPage() {
   const kpis = overview.kpis
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="mx-auto max-w-7xl p-6 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">{t('overview.title')}</h2>
           <p className="text-slate-400 text-sm mt-1">{t('overview.sessionsAcross', { count: allSessions.length, days: data.length })}</p>
           {days === 0 && (
-            <p className="text-slate-500 text-xs mt-1">All period falls back to last 30 days for overview KPIs.</p>
+            <p className="text-slate-500 text-xs mt-1">{t('overview.allPeriodFallback')}</p>
           )}
         </div>
         <PeriodSelector value={days} onChange={setDays} />
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <MetricCard title={t('metrics.successRate')} value={percent(kpis.success_rate)} color="emerald" subtitle={t('metrics.fullyMostly')} />
         <MetricCard title={t('metrics.apiBlocked')} value={percent(kpis.api_error_session_rate)} color="rose" subtitle={t('metrics.sessionsWithApiErrors')} />
         <MetricCard title={t('metrics.contextOverflow')} value={percent(kpis.context_overflow_rate)} color="amber" subtitle={t('metrics.requiredRework')} />
-        <MetricCard title="Estimated Cost" value={usd(kpis.estimated_cost_usd)} color="indigo" subtitle="USD" />
-        <MetricCard title="Cost per Success" value={usd(kpis.cost_per_success)} color="slate" subtitle="USD" />
-        <MetricCard title="Iterative Refinement" value={percent(kpis.iterative_refinement_share)} color="indigo" subtitle={t('common.sessions')} />
+        <MetricCard title={t('metrics.estimatedCost')} value={usd(kpis.estimated_cost_usd)} color="indigo" subtitle="USD" />
+        <MetricCard title={t('metrics.costPerSuccess')} value={usd(kpis.cost_per_success)} color="slate" subtitle="USD" />
+        <MetricCard title={t('metrics.iterativeRefinement')} value={percent(kpis.iterative_refinement_share)} color="indigo" subtitle={t('common.sessions')} />
       </div>
 
       {/* Efficiency Summary */}
       <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Efficiency Summary</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">{t('overview.efficiencySummary')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <MetricCard title="Avg" value={kpis.efficiency.summary.average_score} color="indigo" />
-          <MetricCard title="Median" value={kpis.efficiency.summary.median_score} color="emerald" />
-          <MetricCard title="P90" value={kpis.efficiency.summary.p90_score} color="amber" />
+          <MetricCard title={t('overview.avg')} value={kpis.efficiency.summary.average_score} color="indigo" />
+          <MetricCard title={t('overview.median')} value={kpis.efficiency.summary.median_score} color="emerald" />
+          <MetricCard title={t('overview.p90')} value={kpis.efficiency.summary.p90_score} color="amber" />
         </div>
         {kpis.efficiency.distribution.length > 0 && (
           <div className="space-y-2">

@@ -7,6 +7,11 @@
     "reports": "리포트",
     "profile": "프로필",
     "history": "히스토리",
+    "apiErrors": "API 오류",
+    "sessionEfficiency": "세션 효율",
+    "categorySuccess": "카테고리 성공률",
+    "helpfulness": "유용성",
+    "timePatterns": "시간 패턴",
     "insights": "생산성 인사이트"
   },
   "navGroups": {
@@ -46,7 +51,10 @@
     "contextOverflow": "컨텍스트 초과",
     "fullyMostly": "완전 + 대부분 달성",
     "sessionsWithApiErrors": "API 오류 발생 세션",
-    "requiredRework": "재작업 필요"
+    "requiredRework": "재작업 필요",
+    "estimatedCost": "예상 비용",
+    "costPerSuccess": "성공당 비용",
+    "iterativeRefinement": "반복 개선"
   },
   "overview": {
     "title": "개요",
@@ -61,7 +69,12 @@
     "type": "유형",
     "helpfulnessDistribution": "유용성 분포",
     "sessionTypeDistribution": "세션 유형 분포",
-    "topCategories": "상위 목표 카테고리"
+    "topCategories": "상위 목표 카테고리",
+    "allPeriodFallback": "전체 기간 선택 시, 개요 KPI는 최근 30일로 계산됩니다.",
+    "efficiencySummary": "효율 요약",
+    "avg": "평균",
+    "median": "중앙값",
+    "p90": "P90"
   },
   "sessions": {
     "title": "세션",
@@ -83,7 +96,52 @@
     "highSeveritySessions": "고위험 세션",
     "severityScore": "심각도 점수",
     "frictionTextPatterns": "공통 마찰 패턴",
-    "occurrences": "회 발생"
+    "occurrences": "회 발생",
+    "improveLoop": {
+      "title": "워크플로우 개선",
+      "subtitle": "병목 패턴을 기반으로 개선 루프를 실행합니다",
+      "topPatterns": "상위 병목 패턴",
+      "runButton": "개선 루프 실행",
+      "status": {
+        "idle": "대기",
+        "running": "실행 중…",
+        "success": "완료",
+        "error": "오류"
+      },
+      "summary": {
+        "patternsCount": "패턴",
+        "recommendationsCount": "권장사항",
+        "issueLedgerDelta": "이슈 레저 변화",
+        "reactivated": "재활성화",
+        "runId": "실행 ID",
+        "generatedAt": "생성 시각",
+        "claudeMdApply": "CLAUDE.md 적용",
+        "created": "생성",
+        "updated": "업데이트",
+        "applied": "적용"
+      },
+      "history": {
+        "title": "루프 히스토리",
+        "empty": "아직 실행 기록이 없습니다.",
+        "runAt": "실행 시각",
+        "days": "기간(일)",
+        "patterns": "패턴",
+        "recommendations": "권장사항",
+        "issueLedgerDelta": "이슈 레저 변화",
+        "reactivated": "재활성화"
+      },
+      "trend": {
+        "improved": "개선",
+        "regressed": "악화",
+        "patterns": "패턴",
+        "recommendations": "권장사항",
+        "successRate": "성공률",
+        "apiBlockedRate": "API 차단율",
+        "wrongApproachRate": "잘못된 접근율",
+        "contextOverflowRate": "컨텍스트 오버플로우율",
+        "patternSet": "패턴 구성"
+      }
+    }
   },
   "trends": {
     "title": "트렌드",

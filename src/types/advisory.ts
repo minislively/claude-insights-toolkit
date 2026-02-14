@@ -3,6 +3,8 @@
  * Defines structures for capturing patterns, friction insights, and CLAUDE.md recommendations
  */
 
+import * as path from 'path';
+import { getInsightsPaths } from '../config/paths';
 import type { ISessionFacet, IInsightsDay, ICountObject } from './insights';
 import type { IBottleneckResult, IBottleneckPattern } from '../analyzers/bottleneck';
 import type { IApiErrorResult } from '../analyzers/api-errors';
@@ -369,7 +371,7 @@ export interface IAdvisoryStorageConfig {
  * Default storage configuration
  */
 export const DEFAULT_ADVISORY_CONFIG: IAdvisoryStorageConfig = {
-  basePath: '~/claude-insights/advisory',
+  basePath: path.join(getInsightsPaths().baseDir, 'advisory'),
   storeFileName: 'advisory-store.json',
   historyDirName: 'history',
   maxPatternAgeDays: 90,

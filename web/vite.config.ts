@@ -4,8 +4,12 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 import fs from 'fs'
 import { homedir } from 'os'
+import { getInsightsPaths } from '../src/config/paths'
 
-const DATA_DIR = path.join(homedir(), 'claude-insights', 'data')
+const insightsPaths = getInsightsPaths(path.resolve(__dirname, '..'))
+const DATA_DIR = insightsPaths.dataDir
+const REPORTS_DIR = insightsPaths.reportsDir
+const SNAPSHOTS_DIR = insightsPaths.snapshotsDir
 
 function insightsApiPlugin() {
   return {
@@ -78,8 +82,29 @@ function insightsApiPlugin() {
         }
       })
 
+      server.middlewares.use('/api/loop', async (req: any, res: any) => {
+        try {
+          if ((req.method || 'GET').toUpperCase() !== 'POST') {
+            res.statusCode = 405
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ error: 'Method not allowed' }))
+            return
+          }
+
+          const { handleLoop } = await import('../src/server/api-handlers')
+          const response = await handleLoop(req)
+
+          res.statusCode = response.status
+          res.setHeader('Content-Type', response.contentType)
+          res.end(response.body)
+        } catch {
+          res.statusCode = 500
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'Failed to run loop' }))
+        }
+      })
+
       server.middlewares.use('/api/reports', async (_req: any, res: any) => {
-        const REPORTS_DIR = path.join(homedir(), 'claude-insights', 'reports')
         try {
           let files: string[] = []
           try {
@@ -103,7 +128,6 @@ function insightsApiPlugin() {
       })
 
       server.middlewares.use('/api/report/', async (req: any, res: any) => {
-        const REPORTS_DIR = path.join(homedir(), 'claude-insights', 'reports')
         try {
           const url = new URL(req.url!, `http://${req.headers.host}`)
           const filename = url.pathname.replace('/api/report/', '')
@@ -133,7 +157,6 @@ function insightsApiPlugin() {
       })
 
       server.middlewares.use('/api/snapshots', async (_req: any, res: any) => {
-        const SNAPSHOTS_DIR = path.join(homedir(), 'claude-insights', 'snapshots')
         try {
           let files: string[] = []
           try {
@@ -158,8 +181,7 @@ function insightsApiPlugin() {
 
       server.middlewares.use('/api/profile', async (_req: any, res: any) => {
         try {
-          // Find the latest report
-          const REPORTS_DIR = path.join(homedir(), 'claude-insights', 'reports')
+          // Find the latest report from resolved insights base directory
           let reportHtml = ''
 
           try {
@@ -362,6 +384,17 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'src'),
       '@shared': path.resolve(__dirname, '..', 'src'),
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('/node_modules/recharts/') || id.includes('/node_modules/recharts-scale/')) {
+            return 'recharts'
+          }
+        },
+      },
     },
   },
 })

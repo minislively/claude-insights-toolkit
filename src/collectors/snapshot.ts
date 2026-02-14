@@ -1,17 +1,17 @@
 import { promises as fs } from 'fs';
-import { homedir } from 'os';
 import path from 'path';
-import {
+import { getInsightsPaths } from '../config/paths';
+import type {
   ISnapshotKeyMetrics,
   ISnapshotAnomaly,
   ISnapshotDelta,
   ISnapshot,
   ICostKpi,
 } from '../types/insights';
-import { IReportData } from '../parsers/report-html';
+import type { IReportData } from '../parsers/report-html';
 import { parseReportHtml } from '../parsers/report-html';
 
-const SNAPSHOTS_PATH = path.join(homedir(), 'claude-insights', 'snapshots');
+const SNAPSHOTS_PATH = getInsightsPaths().snapshotsDir;
 
 const DEFAULT_TOKENS_PER_MESSAGE = 180;
 const DEFAULT_COST_PER_1K_TOKENS_USD = 0.003;

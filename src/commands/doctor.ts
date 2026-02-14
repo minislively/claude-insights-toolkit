@@ -10,12 +10,12 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { homedir } from 'os';
 import { loadStoredData } from '../collectors/facets';
 import { deduplicateSessions } from '../utils/sessions';
 import type { IInsightsDay } from '../types/insights';
+import { getInsightsPaths } from '../config/paths';
 
-const DATA_DIR = path.join(homedir(), 'claude-insights', 'data');
+const DATA_DIR = getInsightsPaths().dataDir;
 
 export interface IDoctorCheckItem {
   name: string;

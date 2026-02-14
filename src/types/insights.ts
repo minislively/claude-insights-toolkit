@@ -99,7 +99,7 @@ export interface ISessionFacet {
 }
 
 /**
- * Daily aggregated insights - matches ~/claude-insights/data/YYYY-MM-DD.json
+ * Daily aggregated insights - matches <insights-data-dir>/YYYY-MM-DD.json
  */
 export interface IInsightsDay {
   date: string; // YYYY-MM-DD
