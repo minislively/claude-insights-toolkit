@@ -6,6 +6,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/LoadingState'
 import { MetricCard } from '@/components/MetricCard'
 import { analyzeProductivity } from '@/lib/analyzers'
 import type { ICategoryStats } from '@shared/analyzers/productivity'
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts'
 
 export function CategorySuccessPage() {
   const { t } = useTranslation()
@@ -64,9 +65,32 @@ export function CategorySuccessPage() {
         />
       </div>
 
-      {/* Category Success Bar Chart */}
+      {/* Category Success Visualization */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Bar Chart */}
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Success Rate Comparison</h3>
+          {result.categoryStats.length > 0 ? (
+            <CategorySuccessBarChart categories={result.categoryStats.slice(0, 8)} />
+          ) : (
+            <p className="text-slate-400 text-sm">No category data available</p>
+          )}
+        </div>
+
+        {/* Radar Chart */}
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Category Performance Radar</h3>
+          {result.categoryStats.length >= 3 ? (
+            <CategoryRadarChart categories={result.categoryStats.slice(0, 6)} />
+          ) : (
+            <p className="text-slate-400 text-sm">Need at least 3 categories for radar chart</p>
+          )}
+        </div>
+      </div>
+
+      {/* Detailed Category List */}
       <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Success Rate by Category</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Detailed Breakdown</h3>
         {result.categoryStats.length > 0 ? (
           <div className="space-y-3">
             {result.categoryStats.slice(0, 10).map((category) => (
@@ -202,5 +226,58 @@ function CategoryBar({ category }: { category: ICategoryStats }) {
         </div>
       </div>
     </div>
+  )
+}
+
+function CategorySuccessBarChart({ categories }: { categories: ICategoryStats[] }) {
+  const chartData = categories.map(c => ({
+    name: c.category.length > 15 ? c.category.slice(0, 15) + '...' : c.category.replace(/_/g, ' '),
+    rate: c.successRate,
+    sessions: c.sessions
+  }))
+
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 60 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+        <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} angle={-45} textAnchor="end" height={80} />
+        <YAxis stroke="#94a3b8" fontSize={12} domain={[0, 100]} />
+        <Tooltip
+          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+          labelStyle={{ color: '#cbd5e1' }}
+          itemStyle={{ color: '#e2e8f0' }}
+        />
+        <Bar dataKey="rate" name="Success Rate (%)" radius={[4, 4, 0, 0]}>
+          {chartData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={entry.rate >= 70 ? '#10b981' : entry.rate >= 50 ? '#f59e0b' : '#f43f5e'} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}
+
+function CategoryRadarChart({ categories }: { categories: ICategoryStats[] }) {
+  const chartData = categories.map(c => ({
+    category: c.category.length > 12 ? c.category.slice(0, 12) + '...' : c.category.replace(/_/g, ' '),
+    successRate: c.successRate,
+    sessions: Math.min(c.sessions * 10, 100) // Normalize sessions to 0-100
+  }))
+
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
+        <PolarGrid stroke="#334155" />
+        <PolarAngleAxis dataKey="category" stroke="#94a3b8" fontSize={11} />
+        <PolarRadiusAxis stroke="#94a3b8" fontSize={10} domain={[0, 100]} />
+        <Radar name="Success Rate" dataKey="successRate" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
+        <Legend wrapperStyle={{ color: '#94a3b8', fontSize: '12px' }} />
+        <Tooltip
+          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+          labelStyle={{ color: '#cbd5e1' }}
+          itemStyle={{ color: '#e2e8f0' }}
+        />
+      </RadarChart>
+    </ResponsiveContainer>
   )
 }

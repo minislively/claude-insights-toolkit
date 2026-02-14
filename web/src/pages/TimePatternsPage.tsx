@@ -6,6 +6,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/LoadingState'
 import { MetricCard } from '@/components/MetricCard'
 import { analyzeTimePatterns } from '@/lib/analyzers'
 import type { ITimePatternResult, ITimeSlotStats } from '@shared/analyzers/time-patterns'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
 
 export function TimePatternsPage() {
   const { t } = useTranslation()
@@ -64,7 +65,8 @@ export function TimePatternsPage() {
       {/* Hourly Stats */}
       <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
         <h3 className="text-lg font-semibold text-white mb-4">Activity by Hour</h3>
-        <div className="grid grid-cols-6 gap-2">
+        <HourlyActivityChart hourlyStats={result.hourlyStats} />
+        <div className="grid grid-cols-6 gap-2 mt-6">
           {result.hourlyStats.map((stat) => (
             <TimeSlotCard key={stat.slot} stat={stat} />
           ))}
@@ -176,5 +178,42 @@ function PeriodCard({ periodStat }: { periodStat: ITimeSlotStats }) {
       <div className="text-2xl font-bold text-white mt-1">{periodStat.sessionCount}</div>
       <div className="text-xs text-slate-400">{periodStat.successRate}% success</div>
     </div>
+  )
+}
+
+function HourlyActivityChart({ hourlyStats }: { hourlyStats: ITimeSlotStats[] }) {
+  const chartData = hourlyStats.map(stat => ({
+    hour: stat.slot,
+    sessions: stat.sessionCount,
+    successRate: stat.successRate
+  }))
+
+  const getBarColor = (value: number, max: number) => {
+    const intensity = value / max
+    if (intensity > 0.7) return '#6366f1' // indigo
+    if (intensity > 0.4) return '#8b5cf6' // purple
+    return '#64748b' // slate
+  }
+
+  const maxSessions = Math.max(...chartData.map(d => d.sessions), 1)
+
+  return (
+    <ResponsiveContainer width="100%" height={200}>
+      <BarChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+        <XAxis dataKey="hour" stroke="#94a3b8" fontSize={11} angle={-45} textAnchor="end" height={60} />
+        <YAxis stroke="#94a3b8" fontSize={12} />
+        <Tooltip
+          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+          labelStyle={{ color: '#cbd5e1' }}
+          itemStyle={{ color: '#e2e8f0' }}
+        />
+        <Bar dataKey="sessions" name="Sessions" radius={[4, 4, 0, 0]}>
+          {chartData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={getBarColor(entry.sessions, maxSessions)} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
   )
 }
