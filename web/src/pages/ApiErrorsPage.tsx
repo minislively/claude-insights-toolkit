@@ -6,6 +6,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/LoadingState'
 import { MetricCard } from '@/components/MetricCard'
 import { analyzeApiErrors } from '@/lib/analyzers'
 import type { IApiErrorResult, IApiErrorSession, IApiErrorTrend } from '@shared/analyzers/api-errors'
+import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 export function ApiErrorsPage() {
   const { t } = useTranslation()
@@ -74,31 +75,44 @@ export function ApiErrorsPage() {
       )}
 
       {/* Error Types Breakdown */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Error Types</h3>
-        {result.errorTypes.length > 0 ? (
-          <div className="space-y-3">
-            {result.errorTypes.map((errorType) => (
-              <div key={errorType.type} className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-slate-300 text-sm">{errorType.type}</span>
-                    <span className="text-slate-400 text-xs">{errorType.count} errors in {errorType.sessions} sessions</span>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Bar Chart */}
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Error Types Distribution</h3>
+          {result.errorTypes.length > 0 ? (
+            <div className="space-y-3">
+              {result.errorTypes.map((errorType) => (
+                <div key={errorType.type} className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-slate-300 text-sm">{errorType.type}</span>
+                      <span className="text-slate-400 text-xs">{errorType.count} errors in {errorType.sessions} sessions</span>
+                    </div>
+                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-rose-500 rounded-full"
+                        style={{ width: `${Math.min(100, (errorType.count / (result.errorTypes[0]?.count || 1)) * 100)}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-rose-500 rounded-full"
-                      style={{ width: `${Math.min(100, (errorType.count / (result.errorTypes[0]?.count || 1)) * 100)}%` }}
-                    />
-                  </div>
+                  <span className="ml-4 text-slate-400 text-xs w-16 text-right">{errorType.percentageOfErrorSessions}%</span>
                 </div>
-                <span className="ml-4 text-slate-400 text-xs w-16 text-right">{errorType.percentageOfErrorSessions}%</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-slate-400 text-sm">No API errors detected 🎉</p>
-        )}
+              ))}
+            </div>
+          ) : (
+            <p className="text-slate-400 text-sm">No API errors detected 🎉</p>
+          )}
+        </div>
+
+        {/* Pie Chart */}
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Error Type Proportion</h3>
+          {result.errorTypes.length > 0 ? (
+            <ErrorTypesPieChart errorTypes={result.errorTypes.slice(0, 8)} />
+          ) : (
+            <p className="text-slate-400 text-sm">No API errors detected 🎉</p>
+          )}
+        </div>
       </div>
 
       {/* Trend Chart */}
@@ -179,26 +193,29 @@ export function ApiErrorsPage() {
 }
 
 function TrendChart({ trends }: { trends: IApiErrorTrend[] }) {
-  const maxErrors = Math.max(...trends.map(t => t.totalErrorCount), 1)
+  const chartData = trends.map(t => ({
+    date: t.date.slice(5), // MM-DD format
+    errors: t.totalErrorCount,
+    sessions: t.errorSessions
+  }))
 
   return (
-    <div className="h-64 flex items-end gap-2">
-      {trends.map((trend) => {
-        const height = (trend.totalErrorCount / maxErrors) * 100
-        return (
-          <div key={trend.date} className="flex-1 flex flex-col items-center gap-1">
-            <div className="w-full flex flex-col items-center">
-              <span className="text-xs text-slate-400 mb-1">{trend.totalErrorCount}</span>
-              <div
-                className="w-full bg-rose-500/80 rounded-t"
-                style={{ height: `${Math.max(height, 4)}px` }}
-              />
-            </div>
-            <span className="text-xs text-slate-500">{trend.date.slice(5)}</span>
-          </div>
-        )
-      })}
-    </div>
+    <ResponsiveContainer width="100%" height={300}>
+      <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+        <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} />
+        <YAxis yAxisId="left" stroke="#94a3b8" fontSize={12} />
+        <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={12} />
+        <Tooltip
+          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+          labelStyle={{ color: '#cbd5e1' }}
+          itemStyle={{ color: '#e2e8f0' }}
+        />
+        <Legend wrapperStyle={{ color: '#94a3b8' }} />
+        <Line yAxisId="left" type="monotone" dataKey="errors" stroke="#f43f5e" strokeWidth={2} name="Total Errors" />
+        <Line yAxisId="right" type="monotone" dataKey="sessions" stroke="#f59e0b" strokeWidth={2} name="Error Sessions" />
+      </LineChart>
+    </ResponsiveContainer>
   )
 }
 
@@ -285,4 +302,40 @@ function getRecommendationBadgeStyles(type: string): string {
     default:
       return 'bg-blue-500 text-white'
   }
+}
+
+function ErrorTypesPieChart({ errorTypes }: { errorTypes: Array<{ type: string; count: number }> }) {
+  const COLORS = ['#f43f5e', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ec4899', '#14b8a6', '#f97316']
+
+  const data = errorTypes.map((et, idx) => ({
+    name: et.type.length > 20 ? et.type.slice(0, 20) + '...' : et.type,
+    value: et.count,
+    fullName: et.type
+  }))
+
+  return (
+    <ResponsiveContainer width="100%" height={280}>
+      <PieChart>
+        <Pie
+          data={data}
+          cx="50%"
+          cy="50%"
+          labelLine={false}
+          label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
+          outerRadius={90}
+          fill="#8884d8"
+          dataKey="value"
+        >
+          {data.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip
+          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+          labelStyle={{ color: '#cbd5e1' }}
+          itemStyle={{ color: '#e2e8f0' }}
+        />
+      </PieChart>
+    </ResponsiveContainer>
+  )
 }
