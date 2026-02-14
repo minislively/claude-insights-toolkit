@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useInsightsData, useBottlenecks } from '@/hooks'
+import { useInsightsData, useOverviewData } from '@/hooks'
 import { MetricCard } from '@/components/MetricCard'
 import { PeriodSelector } from '@/components/PeriodSelector'
 import { TrendLineChart } from '@/components/charts/TrendLineChart'
@@ -8,11 +8,28 @@ import { OutcomeDonut } from '@/components/charts/OutcomeDonut'
 import { FrictionBarChart } from '@/components/charts/FrictionBarChart'
 import { LoadingState, ErrorState, EmptyState } from '@/components/LoadingState'
 
+function percent(rate: number): string {
+  return `${Math.round(rate * 100)}%`
+}
+
+function usd(value: number | null): string {
+  if (value === null) return '—'
+  return `$${value.toFixed(2)}`
+}
+
 export function OverviewPage() {
   const { t } = useTranslation()
   const [days, setDays] = useState(14)
-  const { data, loading, error, refetch } = useInsightsData(days)
-  const bottleneckResult = useBottlenecks(data)
+
+  const normalizedDays = days === 0 ? 30 : days
+
+  const { data, loading, error, refetch } = useInsightsData(normalizedDays)
+  const {
+    data: overview,
+    loading: overviewLoading,
+    error: overviewError,
+    refetch: refetchOverview,
+  } = useOverviewData(normalizedDays)
 
   const allSessions = useMemo(() => data.flatMap(d => d.sessions), [data])
 
@@ -33,11 +50,16 @@ export function OverviewPage() {
       }))
   }, [allSessions])
 
-  if (loading) return <LoadingState />
-  if (error) return <ErrorState message={error} onRetry={refetch} />
-  if (data.length === 0) return <EmptyState />
+  if (loading || overviewLoading) return <LoadingState />
+  if (error || overviewError) {
+    return <ErrorState message={error || overviewError || 'Unknown error'} onRetry={() => {
+      refetch()
+      refetchOverview()
+    }} />
+  }
+  if (data.length === 0 || !overview) return <EmptyState />
 
-  const metrics = bottleneckResult?.metrics
+  const kpis = overview.kpis
 
   return (
     <div className="p-8 space-y-8">
@@ -46,16 +68,41 @@ export function OverviewPage() {
         <div>
           <h2 className="text-2xl font-bold text-white">{t('overview.title')}</h2>
           <p className="text-slate-400 text-sm mt-1">{t('overview.sessionsAcross', { count: allSessions.length, days: data.length })}</p>
+          {days === 0 && (
+            <p className="text-slate-500 text-xs mt-1">All period falls back to last 30 days for overview KPIs.</p>
+          )}
         </div>
         <PeriodSelector value={days} onChange={setDays} />
       </div>
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title={t('metrics.totalSessions')} value={metrics?.totalSessions ?? allSessions.length} color="indigo" subtitle={`${data.length} ${t('common.days')}`} />
-        <MetricCard title={t('metrics.successRate')} value={`${metrics?.successRate ?? 0}%`} color="emerald" subtitle={t('metrics.fullyMostly')} />
-        <MetricCard title={t('metrics.apiBlocked')} value={`${metrics?.apiBlockedRate ?? 0}%`} color="rose" subtitle={t('metrics.sessionsWithApiErrors')} />
-        <MetricCard title={t('metrics.wrongApproach')} value={`${metrics?.wrongApproachRate ?? 0}%`} color="amber" subtitle={t('metrics.requiredRework')} />
+        <MetricCard title={t('metrics.successRate')} value={percent(kpis.success_rate)} color="emerald" subtitle={t('metrics.fullyMostly')} />
+        <MetricCard title={t('metrics.apiBlocked')} value={percent(kpis.api_error_session_rate)} color="rose" subtitle={t('metrics.sessionsWithApiErrors')} />
+        <MetricCard title={t('metrics.contextOverflow')} value={percent(kpis.context_overflow_rate)} color="amber" subtitle={t('metrics.requiredRework')} />
+        <MetricCard title="Estimated Cost" value={usd(kpis.estimated_cost_usd)} color="indigo" subtitle="USD" />
+        <MetricCard title="Cost per Success" value={usd(kpis.cost_per_success)} color="slate" subtitle="USD" />
+        <MetricCard title="Iterative Refinement" value={percent(kpis.iterative_refinement_share)} color="indigo" subtitle={t('common.sessions')} />
+      </div>
+
+      {/* Efficiency Summary */}
+      <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Efficiency Summary</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <MetricCard title="Avg" value={kpis.efficiency.summary.average_score} color="indigo" />
+          <MetricCard title="Median" value={kpis.efficiency.summary.median_score} color="emerald" />
+          <MetricCard title="P90" value={kpis.efficiency.summary.p90_score} color="amber" />
+        </div>
+        {kpis.efficiency.distribution.length > 0 && (
+          <div className="space-y-2">
+            {kpis.efficiency.distribution.map((bucket) => (
+              <div key={bucket.bucket} className="flex items-center justify-between text-sm text-slate-300">
+                <span>{bucket.bucket}</span>
+                <span>{bucket.count} ({percent(bucket.share)})</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Charts Row */}
