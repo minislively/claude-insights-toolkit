@@ -859,6 +859,50 @@ program
     }
   });
 
+/**
+ * Doctor command - Diagnose data integrity issues
+ */
+program
+  .command('doctor')
+  .description('Diagnose data integrity issues (duplicates, gaps, corruption)')
+  .action(async () => {
+    const { runDoctorCheck } = await import('./commands/doctor');
+    const ora = (await import('ora')).default;
+
+    const spinner = ora('Running data integrity checks...').start();
+
+    try {
+      const result = await runDoctorCheck();
+      spinner.succeed(chalk.green('Data integrity check complete'));
+
+      console.log(chalk.bold('\n🔍 Data Integrity Report'));
+      console.log(chalk.gray('━'.repeat(50)));
+
+      for (const check of result.checks) {
+        const color = check.status === 'PASS' ? chalk.green : check.status === 'WARN' ? chalk.yellow : chalk.red;
+        const icon = check.status === 'PASS' ? '✓' : check.status === 'WARN' ? '⚠' : '✗';
+        console.log(`  ${color(icon)} ${chalk.bold(check.name)}: ${check.details}`);
+
+        if (check.recommendation) {
+          console.log(`    ${chalk.gray('→')} ${chalk.italic(check.recommendation)}`);
+        }
+      }
+
+      console.log(chalk.blue(`\n${result.summary}`));
+      console.log(chalk.blue(`Overall status: ${result.status}`));
+
+      if (result.status === 'FAIL') {
+        process.exit(1);
+      }
+    } catch (error) {
+      spinner.fail(chalk.red('Data integrity check failed'));
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
+  });
+
 program
   .command('daemon')
   .description('Manage the auto-collection file watcher daemon')

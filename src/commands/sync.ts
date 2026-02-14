@@ -285,6 +285,33 @@ export async function createPrivateRepo(repoName: string = 'claude-insights-data
 /**
  * Initialize sync: create repo, init local git, add remote, first push
  */
+async function resolveInitPushBranch(git: SimpleGit): Promise<string> {
+  const local = await git.branchLocal();
+
+  if (local.all.includes('main')) {
+    return 'main';
+  }
+
+  if (local.all.includes('master')) {
+    return 'master';
+  }
+
+  const branch = await git.branch();
+  if (branch.current) {
+    return branch.current;
+  }
+
+  if (local.current) {
+    return local.current;
+  }
+
+  if (local.all.length > 0) {
+    return local.all[0];
+  }
+
+  throw new Error('No local branch found for initial push');
+}
+
 export async function initSync(repoName: string = 'claude-insights-data'): Promise<{
   success: boolean;
   repoUrl?: string;
@@ -319,16 +346,11 @@ export async function initSync(repoName: string = 'claude-insights-data'): Promi
     // Step 5: Initial push
     const git = simpleGit(INSIGHTS_DIR);
     try {
-      await git.push('origin', 'master', ['--set-upstream']);
-      steps.push(`✓ Initial push complete`);
-    } catch {
-      // Try with force for first push if branch doesn't exist
-      try {
-        await git.push('origin', 'master', ['--set-upstream', '--force']);
-        steps.push(`✓ Initial push complete (force)`);
-      } catch (e: any) {
-        return { success: false, error: `Push failed: ${e.message}`, steps };
-      }
+      const pushBranch = await resolveInitPushBranch(git);
+      await git.push('origin', pushBranch, ['--set-upstream']);
+      steps.push(`✓ Initial push complete (${pushBranch})`);
+    } catch (e: any) {
+      return { success: false, error: `Push failed: ${e.message}`, steps };
     }
 
     return { success: true, repoUrl: repo.url, steps };
