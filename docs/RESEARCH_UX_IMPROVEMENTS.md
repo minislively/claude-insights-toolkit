@@ -371,6 +371,54 @@ const analysis = analyzeBottlenecks(uniqueSessions); // 중복 없이 분석
 
 ---
 
+## Appendix A: Claude Code `/insights` 사용자 사용 패턴 리서치 요약 (외부 레퍼런스)
+
+> 목적: 툴킷이 해결하려는 문제(7일 소실, 수동 분석 번거로움, 액션 부족)가 실제 사용자 경험에서 어떻게 나타나는지 확인.
+
+### 사람들이 `/insights`를 실제로 쓰는 방식(반복 패턴)
+
+1) **주간 회고/패턴 교정(가장 흔함)**
+- 주 1회 실행 → 병목(마찰)과 성공 패턴 확인 → 다음 주 규칙 1~2개만 적용
+- 의사결정 예: “디버깅은 재현-가설-검증 루프 강제”, “복잡한 변경은 접근 검증 먼저”
+
+2) **문제 터졌을 때 진단(원인 분리)**
+- “이번 주 왜 안 풀렸지?” 시점에 API 에러/반복 루프/시간대 영향 등을 확인
+
+3) **자기 코칭(프롬프트/태도/작업 습관 교정)**
+- 보고서가 ‘로스팅(roast)’처럼 느껴질 수 있으나, 실제로는 행동 변화 유도 계기로 언급됨
+
+4) **팀/운영 참고(간접)**
+- 조직 단위 analytics(콘솔/API)와 같이 보며 개인 습관 + 팀 지표를 연결
+
+### 보고되는 실질 효과(체감 포인트)
+- **비효율 루프 인지**: 같은 문제로 왕복하는 패턴을 ‘수치/증거’로 확인
+- **작업 시작 품질 개선**: 목표/제약/완료조건(AC) 명시 습관 강화
+- **우선순위 조정**: 어떤 작업 유형이 실제로 효율이 나오는지 판단
+- **회고 객관화**: 감이 아닌 기록 기반 주간 리뷰가 가능해짐
+
+### 단점/불편/피드백(반복적으로 언급)
+- **지표 왜곡 가능성**: 긴 세션, 브라우저 자동화/특수 작업이 지표를 크게 왜곡
+- **실행 비용/무거움**: `/insights` 실행이 부담스럽게 느껴진다는 경험담
+- **피드백 피로감**: 반복적 피드백 프롬프트/경고가 집중을 깬다는 불만
+- **해석 난이도**: “그래서 뭘 바꾸면 되지?”까지 자동으로 이어지지 않음 → 템플릿/루틴이 필요
+
+### Toolkit에 대한 시사점(제품 관점)
+- **데이터 품질/신뢰가 1순위**: 중복 제거, ‘왜곡 가능성’ 표시(롱 세션, 자동화 세션) 같은 가드레일 필요
+- **액션 변환이 핵심 가치**: 원인 TOP2 + 다음 주 액션 2개로 강제 요약(사용자 피로 감소)
+- **무거운 실행을 대체할 CLI 요약**: 주간 다이제스트/스냅샷 기반 요약을 우선 제공하면 재방문률에 유리
+
+### Sources (외부 레퍼런스)
+- https://docs.anthropic.com/en/docs/claude-code/cli-reference
+- https://docs.anthropic.com/en/docs/claude-code/analytics
+- https://docs.anthropic.com/en/docs/claude-code/monitoring-usage
+- https://www.natemeyvis.com/claude-codes-insights/
+- https://www.zolkos.com/2026/02/04/deep-dive-how-claude-codes-insights-command-works.html
+- https://jangwook.net/en/blog/en/claude-code-insights-usage-analysis/
+- https://www.reddit.com/r/ClaudeCode/comments/1r15ca9/insights_is_great_thanks_to_whomever_mentioned_it/
+- https://www.reddit.com/r/ClaudeCode/comments/1r36osf/claude_code_insights/
+- https://github.com/anthropics/claude-code/issues/8036
+- https://github.com/anthropics/claude-code/issues/9239
+
 ## 참고 자료
 
 - [INSTALL.md](./INSTALL.md) - 자동 수집 설정 가이드
