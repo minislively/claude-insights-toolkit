@@ -1,4 +1,5 @@
 export { useInsightsData } from './useInsightsData'
+export { useOverviewData } from './useOverviewData'
 export { useBottlenecks } from './useBottlenecks'
 export { useTrends } from './useTrends'
 export { useReports, useReportContent } from './useReports'
