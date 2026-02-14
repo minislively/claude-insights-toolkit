@@ -9,6 +9,13 @@
     "history": "History",
     "insights": "Productivity Insights"
   },
+  "navGroups": {
+    "executiveOverview": "Executive Overview",
+    "health": "Health",
+    "efficiencyCost": "Efficiency & Cost",
+    "qualityBehavior": "Quality & Behavior",
+    "drillDown": "Drill-down"
+  },
   "common": {
     "dashboard": "Dashboard",
     "loading": "Loading data...",

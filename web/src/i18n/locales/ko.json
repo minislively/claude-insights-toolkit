@@ -9,6 +9,13 @@
     "history": "히스토리",
     "insights": "생산성 인사이트"
   },
+  "navGroups": {
+    "executiveOverview": "요약",
+    "health": "상태",
+    "efficiencyCost": "효율 & 비용",
+    "qualityBehavior": "품질 & 행동",
+    "drillDown": "드릴다운"
+  },
   "common": {
     "dashboard": "대시보드",
     "loading": "데이터 로딩 중...",

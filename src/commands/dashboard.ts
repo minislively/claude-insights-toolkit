@@ -10,7 +10,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { URL } from 'url';
 import { execSync, exec } from 'child_process';
-import { handleData, handleDates, handleReports, handleReport, handleSnapshots, handleProfile } from '../server/api-handlers';
+import { handleData, handleDates, handleReports, handleReport, handleSnapshots, handleProfile, handleOverview } from '../server/api-handlers';
 import { serveStatic } from '../server/static';
 
 const WEB_DIST = path.join(__dirname, '..', '..', 'web', 'dist');
@@ -84,6 +84,11 @@ async function handleApiRequest(pathname: string, searchParams: URLSearchParams)
 
   if (pathname === '/api/profile') {
     return await handleProfile();
+  }
+
+  if (pathname === '/api/overview') {
+    const days = parseInt(searchParams.get('days') || '30', 10);
+    return handleOverview(days);
   }
 
   return { status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) };

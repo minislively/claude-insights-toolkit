@@ -4,11 +4,85 @@ This document describes the programmatic API for Claude Insights Toolkit.
 
 ## Table of Contents
 
+- [Dashboard HTTP API (v1)](#dashboard-http-api-v1)
 - [Collectors](#collectors)
 - [Analyzers](#analyzers)
 - [Generators](#generators)
 - [Storage](#storage)
 - [Types](#types)
+
+## Dashboard HTTP API (v1)
+
+This section documents the Dashboard HTTP API contract (**v1**). It is intended for the web dashboard UI and other clients that want a stable KPI summary.
+
+> Note: The current server also exposes endpoints like `/api/data`, `/api/dates`, `/api/reports`, `/api/report/:filename`, `/api/snapshots`, and `/api/profile`. Those are listed here for reference, but **only the endpoints explicitly marked as v1 below are part of the v1 contract**.
+
+### Endpoints (v1)
+
+#### GET `/api/overview?days=30` (v1 contract)
+
+Returns a KPI summary for the most recent N days.
+
+**Query params**
+- `days` (optional, number): number of days to include (example: `30`).
+
+**Response (200)**
+
+Response shape aligns with the KPI dictionary in `docs/DASHBOARD_METRICS_EVENT_SCHEMA_IA_V1.md`.
+
+```json
+{
+  "period": {
+    "days": 30,
+    "start_date": "2026-01-16",
+    "end_date": "2026-02-14"
+  },
+  "kpis": {
+    "success_rate": 0.67,
+    "api_error_session_rate": 0.12,
+    "context_overflow_rate": 0.05,
+
+    "estimated_cost_usd": 7.23,
+    "cost_per_success": 0.90,
+
+    "iterative_refinement_share": 0.28,
+
+    "efficiency": {
+      "summary": {
+        "average_score": 71.4,
+        "median_score": 74,
+        "p90_score": 92
+      },
+      "distribution": [
+        { "bucket": "0-20", "count": 1, "share": 0.02 },
+        { "bucket": "21-40", "count": 4, "share": 0.08 },
+        { "bucket": "41-60", "count": 10, "share": 0.20 },
+        { "bucket": "61-80", "count": 22, "share": 0.44 },
+        { "bucket": "81-100", "count": 13, "share": 0.26 }
+      ]
+    },
+
+    "helpfulness_distribution": {
+      "very_helpful": { "count": 18, "share": 0.36 },
+      "moderately_helpful": { "count": 20, "share": 0.40 },
+      "slightly_helpful": { "count": 9, "share": 0.18 },
+      "unhelpful": { "count": 3, "share": 0.06 }
+    },
+
+    "user_satisfaction_distribution": {
+      "satisfied": { "count": 12, "share": 0.24 },
+      "likely_satisfied": { "count": 25, "share": 0.50 },
+      "dissatisfied": { "count": 10, "share": 0.20 },
+      "frustrated": { "count": 3, "share": 0.06 }
+    }
+  }
+}
+```
+
+**Contract notes (v1)**
+- All `*_rate` and `*_share` values are decimals in `[0, 1]`.
+- `estimated_cost_usd` and `cost_per_success` MAY be `null` when cost data is unavailable for the requested window.
+- Efficiency score is a derived 0–100 score.
 
 ## Collectors
 
