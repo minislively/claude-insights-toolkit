@@ -167,6 +167,47 @@ cd /path/to/your/project
 cit analyze --days 7 | mail -s "Weekly Productivity Report" you@example.com
 ```
 
+### Weekly report template (efficiency-first)
+
+For users who prioritize implementation/debugging efficiency, use this workflow:
+
+1. Run:
+```bash
+cit analyze --days 7 --verbose
+cit trend --days 14
+cit power --days 30 --insights
+```
+2. Paste the raw CLI output into the template below.
+3. Extract only 2 actions for next week.
+
+```text
+You are my weekly insights assistant.
+Priority: efficiency (reduce loops, blockage, rework).
+Workload focus: implementation + debugging.
+
+[INPUT START]
+(Paste raw output from cit analyze/trend/power)
+[INPUT END]
+
+Return in this format:
+1) KPI snapshot
+- Sessions
+- Success rate
+- API blocked / Wrong approach / other efficiency signals
+
+2) Top 2 root causes (with direct evidence from input)
+
+3) Next-week actions (exactly 2)
+- Rule sentence
+- Scope (implementation/debugging/common)
+- 1-3 execution checklist items
+- Metric to track
+
+4) Cautions (noise/interpretation risks)
+```
+
+> Note: Fully automatic narrative generation is possible, but robust scoring/normalization logic should be added first to avoid overfitting to short-term spikes.
+
 ## Troubleshooting
 
 ### No data collected
