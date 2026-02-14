@@ -170,6 +170,15 @@ Or manually add to `~/.claude/settings.json`:
 
 See [INSTALL.md](./docs/INSTALL.md) for detailed setup instructions.
 
+#### Scheduler recommendation (macOS)
+
+- Recommended scheduler: **launchd** (`LaunchAgent`) for periodic background collection.
+- Fallback on non-macOS: **cron**.
+- One-trigger principle: enable **exactly one** automation path at a time to avoid duplicate collection.
+  - Hook (`cit setup`) for post-session full collection
+  - Daemon (`cit daemon start`) for realtime/light watch mode
+  - Scheduler (launchd/cron) for interval-based collection
+
 ### 📊 Example Output
 
 ```bash
