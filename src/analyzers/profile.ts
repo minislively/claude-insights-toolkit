@@ -1,5 +1,5 @@
 import type { IReportData, IChartData } from '../parsers/report-html';
-import type { IInsightsDay, ISessionFacet } from '../types/insights';
+import type { IInsightsDay } from '../types/insights';
 
 export interface ICodingProfile {
   generatedAt: string;
@@ -103,7 +103,7 @@ function calculatePeakPeriod(hourlyActivity: Record<string, number>): { peakPeri
   };
 
   // Sum activity for each period
-  Object.entries(periods).forEach(([periodName, period]) => {
+  Object.entries(periods).forEach(([_periodName, period]) => {
     period.total = period.hours.reduce((sum, hour) => {
       // Try both zero-padded and non-padded keys
       return sum + (hourlyActivity[hour.toString()] || hourlyActivity[hour.toString().padStart(2, '0')] || 0);
@@ -155,7 +155,7 @@ function determineSentiment(distribution: Array<{ name: string; count: number }>
 /**
  * Generate coding profile from report data and optional facets data
  */
-export function generateProfile(reportData: IReportData, facetsData?: IInsightsDay[]): ICodingProfile {
+export function generateProfile(reportData: IReportData, _facetsData?: IInsightsDay[]): ICodingProfile {
   const charts = reportData.charts;
 
   // 1. Identity

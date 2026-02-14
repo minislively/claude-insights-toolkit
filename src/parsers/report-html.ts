@@ -285,7 +285,6 @@ function parseMultiClauding($: cheerio.CheerioAPI): IMultiClauding | null {
   // The multi-clauding card contains inline stat blocks with large styled numbers.
   const cardEl = card as cheerio.Cheerio<any>;
   const cardHtml = cardEl.html() || '';
-  const cardText = cardEl.text();
 
   let overlapEvents = 0;
   let sessionsInvolved = 0;

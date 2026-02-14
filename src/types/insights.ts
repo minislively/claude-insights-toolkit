@@ -6,44 +6,52 @@
 /**
  * Session outcome - 5 possible values from actual schema
  */
-export enum Outcome {
-  FULLY_ACHIEVED = 'fully_achieved',
-  MOSTLY_ACHIEVED = 'mostly_achieved',
-  PARTIALLY_ACHIEVED = 'partially_achieved',
-  NOT_ACHIEVED = 'not_achieved',
-  UNCLEAR_FROM_TRANSCRIPT = 'unclear_from_transcript',
-}
+export const Outcome = {
+  FULLY_ACHIEVED: 'fully_achieved',
+  MOSTLY_ACHIEVED: 'mostly_achieved',
+  PARTIALLY_ACHIEVED: 'partially_achieved',
+  NOT_ACHIEVED: 'not_achieved',
+  UNCLEAR_FROM_TRANSCRIPT: 'unclear_from_transcript',
+} as const;
+
+export type Outcome = (typeof Outcome)[keyof typeof Outcome];
 
 /**
  * Claude helpfulness - 4 values from actual schema
  */
-export enum ClaudeHelpfulness {
-  VERY_HELPFUL = 'very_helpful',
-  MODERATELY_HELPFUL = 'moderately_helpful',
-  SLIGHTLY_HELPFUL = 'slightly_helpful',
-  UNHELPFUL = 'unhelpful',
-}
+export const ClaudeHelpfulness = {
+  VERY_HELPFUL: 'very_helpful',
+  MODERATELY_HELPFUL: 'moderately_helpful',
+  SLIGHTLY_HELPFUL: 'slightly_helpful',
+  UNHELPFUL: 'unhelpful',
+} as const;
+
+export type ClaudeHelpfulness = (typeof ClaudeHelpfulness)[keyof typeof ClaudeHelpfulness];
 
 /**
  * Session type - 5 values from actual schema
  */
-export enum SessionType {
-  SINGLE_TASK = 'single_task',
-  MULTI_TASK = 'multi_task',
-  QUICK_QUESTION = 'quick_question',
-  ITERATIVE_REFINEMENT = 'iterative_refinement',
-  EXPLORATION = 'exploration',
-}
+export const SessionType = {
+  SINGLE_TASK: 'single_task',
+  MULTI_TASK: 'multi_task',
+  QUICK_QUESTION: 'quick_question',
+  ITERATIVE_REFINEMENT: 'iterative_refinement',
+  EXPLORATION: 'exploration',
+} as const;
+
+export type SessionType = (typeof SessionType)[keyof typeof SessionType];
 
 /**
  * Primary success - 4 values from actual schema
  */
-export enum PrimarySuccess {
-  CORRECT_CODE_EDITS = 'correct_code_edits',
-  MULTI_FILE_CHANGES = 'multi_file_changes',
-  FAST_ACCURATE_SEARCH = 'fast_accurate_search',
-  NONE = 'none',
-}
+export const PrimarySuccess = {
+  CORRECT_CODE_EDITS: 'correct_code_edits',
+  MULTI_FILE_CHANGES: 'multi_file_changes',
+  FAST_ACCURATE_SEARCH: 'fast_accurate_search',
+  NONE: 'none',
+} as const;
+
+export type PrimarySuccess = (typeof PrimarySuccess)[keyof typeof PrimarySuccess];
 
 /**
  * Friction types (8 observed - use string type for extensibility)
