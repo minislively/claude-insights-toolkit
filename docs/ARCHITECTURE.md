@@ -284,10 +284,10 @@ Comprehensive type system matching Claude Code's insights schema:
 
 2. CLI:
    - Calculate date range (today - 7 days)
-   - Load data via loadRecentDays(7)
+   - Load data via loadStoredData({ days: 7 })
 
 3. Storage:
-   - Read last 7 JSON files
+   - Read last 7 JSON files from ~/.cit-data/
    - Combine into IInsightsDay[]
 
 4. Analyzer:
