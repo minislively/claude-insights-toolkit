@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LoadingState, ErrorState, EmptyState } from '@/components/LoadingState'
+import { LoadingState, ErrorState } from '@/components/LoadingState'
 
 interface ProfileData {
   generatedAt: string;
@@ -84,11 +84,25 @@ export function ProfilePage() {
   if (loading) return <LoadingState />
   if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />
   if (!profile) return (
-    <div className="p-8">
-      <h2 className="text-2xl font-bold text-white mb-2">{t('profile.title')}</h2>
-      <div className="bg-slate-800 rounded-xl border border-slate-700 p-8 text-center">
-        <p className="text-slate-400 text-lg mb-2">{t('profile.noReport')}</p>
-        <p className="text-slate-500 text-sm">{t('profile.runInsights')}</p>
+    <div className="mx-auto max-w-7xl p-6 space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-white">{t('profile.title')}</h2>
+      </div>
+
+      <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 space-y-3">
+        <p className="text-lg text-white">{t('profile.empty.title')}</p>
+        <p className="text-sm text-slate-300">{t('profile.empty.description')}</p>
+
+        <div className="space-y-2 text-sm text-slate-300">
+          <p>{t('profile.empty.stepInsights')}</p>
+          <p>{t('profile.empty.stepCollect')}</p>
+          <p>{t('profile.empty.stepProfile')}</p>
+        </div>
+
+        <div className="pt-3 border-t border-slate-700 space-y-1 text-xs text-slate-400">
+          <p>{t('profile.empty.outputReport')}</p>
+          <p>{t('profile.empty.outputProfile')}</p>
+        </div>
       </div>
     </div>
   )

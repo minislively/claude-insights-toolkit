@@ -44,6 +44,7 @@ export function Layout() {
       ],
     },
   ]
+  const MOBILE_NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items)
 
   return (
     <div className="flex h-screen bg-slate-900 text-slate-100">
@@ -88,9 +89,31 @@ export function Layout() {
       </aside>
 
       <main className="min-w-0 flex-1 overflow-auto bg-slate-950/40">
-        <div className="border-b border-slate-800 px-4 py-3 lg:hidden">
-          <h1 className="text-base font-semibold text-white">Claude Insights</h1>
-          <p className="text-xs text-slate-400">{t('common.dashboard')}</p>
+        <div className="border-b border-slate-800 lg:hidden">
+          <div className="px-4 py-3">
+            <h1 className="text-base font-semibold text-white">Claude Insights</h1>
+            <p className="text-xs text-slate-400">{t('common.dashboard')}</p>
+          </div>
+          <nav className="overflow-x-auto px-4 pb-3">
+            <div className="flex w-max gap-2">
+              {MOBILE_NAV_ITEMS.map(({ to, label }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={to === '/'}
+                  className={({ isActive }) =>
+                    `whitespace-nowrap rounded-md px-3 py-1.5 text-xs transition-colors ${
+                      isActive
+                        ? 'bg-indigo-500/15 text-indigo-300'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`
+                  }
+                >
+                  {label}
+                </NavLink>
+              ))}
+            </div>
+          </nav>
         </div>
         <Outlet />
       </main>

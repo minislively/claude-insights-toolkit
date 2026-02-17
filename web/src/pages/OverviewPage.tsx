@@ -61,6 +61,46 @@ export function OverviewPage() {
   if (data.length === 0 || !overview) return <EmptyState />
 
   const kpis = overview.kpis
+  const estimatedCost = kpis.estimated_cost_usd ?? 0
+  const nextActions = [
+    {
+      id: 'api_error_session_rate',
+      label: t(kpis.api_error_session_rate > 0.12 ? 'overview.nextActionItems.reduceApiErrors' : 'overview.nextActionItems.keepApiErrorsLow'),
+      value: percent(kpis.api_error_session_rate),
+      score: Math.max(0, kpis.api_error_session_rate - 0.12) / 0.12,
+      order: 0,
+    },
+    {
+      id: 'success_rate',
+      label: t(kpis.success_rate < 0.7 ? 'overview.nextActionItems.improveSuccessRate' : 'overview.nextActionItems.maintainSuccessRate'),
+      value: percent(kpis.success_rate),
+      score: Math.max(0, 0.7 - kpis.success_rate) / 0.7,
+      order: 1,
+    },
+    {
+      id: 'iterative_refinement_share',
+      label: t(kpis.iterative_refinement_share > 0.35 ? 'overview.nextActionItems.reduceRefinementLoops' : 'overview.nextActionItems.keepRefinementStable'),
+      value: percent(kpis.iterative_refinement_share),
+      score: Math.max(0, kpis.iterative_refinement_share - 0.35) / 0.35,
+      order: 2,
+    },
+    {
+      id: 'context_overflow_rate',
+      label: t(kpis.context_overflow_rate > 0.08 ? 'overview.nextActionItems.preventContextOverflow' : 'overview.nextActionItems.keepContextHealthy'),
+      value: percent(kpis.context_overflow_rate),
+      score: Math.max(0, kpis.context_overflow_rate - 0.08) / 0.08,
+      order: 3,
+    },
+    {
+      id: 'estimated_cost_usd',
+      label: t(estimatedCost > 8 ? 'overview.nextActionItems.controlCost' : 'overview.nextActionItems.keepCostEfficient'),
+      value: usd(kpis.estimated_cost_usd),
+      score: Math.max(0, estimatedCost - 8) / 8,
+      order: 4,
+    },
+  ]
+    .sort((a, b) => b.score - a.score || a.order - b.order)
+    .slice(0, 3)
 
   return (
     <div className="mx-auto max-w-7xl p-6 space-y-8">
@@ -84,6 +124,19 @@ export function OverviewPage() {
         <MetricCard title={t('metrics.estimatedCost')} value={usd(kpis.estimated_cost_usd)} color="indigo" subtitle="USD" />
         <MetricCard title={t('metrics.costPerSuccess')} value={usd(kpis.cost_per_success)} color="slate" subtitle="USD" />
         <MetricCard title={t('metrics.iterativeRefinement')} value={percent(kpis.iterative_refinement_share)} color="indigo" subtitle={t('common.sessions')} />
+      </div>
+
+      {/* Next Actions */}
+      <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+        <h3 className="text-lg font-semibold text-white mb-3">{t('overview.nextActions')}</h3>
+        <ul className="space-y-2">
+          {nextActions.map((a) => (
+            <li key={a.id} className="flex items-start justify-between gap-4 text-sm">
+              <span className="text-slate-300">• {a.label}</span>
+              <span className="font-mono text-slate-400 whitespace-nowrap">{a.value}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       {/* Efficiency Summary */}

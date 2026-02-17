@@ -72,6 +72,19 @@
     "topCategories": "Top Goal Categories",
     "allPeriodFallback": "All period falls back to last 30 days for overview KPIs.",
     "efficiencySummary": "Efficiency Summary",
+    "nextActions": "Next Actions",
+    "nextActionItems": {
+      "reduceApiErrors": "Reduce API error sessions",
+      "keepApiErrorsLow": "Keep API error sessions low",
+      "improveSuccessRate": "Improve successful outcomes",
+      "maintainSuccessRate": "Maintain strong success rate",
+      "reduceRefinementLoops": "Reduce iterative refinement loops",
+      "keepRefinementStable": "Keep refinement loops stable",
+      "preventContextOverflow": "Prevent context overflow rework",
+      "keepContextHealthy": "Keep context usage healthy",
+      "controlCost": "Control estimated cost",
+      "keepCostEfficient": "Keep cost efficiency"
+    },
     "avg": "Avg",
     "median": "Median",
     "p90": "P90"
@@ -83,7 +96,8 @@
     "helpfulness": "Helpfulness",
     "friction": "Friction",
     "summary": "Summary",
-    "frictionDetail": "Friction"
+    "frictionDetail": "Friction",
+    "unknownHelpfulness": "Unknown"
   },
   "bottlenecks": {
     "title": "Bottlenecks",
@@ -186,7 +200,16 @@
     "subtitle": "Official Claude Code insights",
     "noReports": "No reports available. Run cit collect to generate reports.",
     "loadingReport": "Loading report...",
-    "selectReport": "Select a report to view"
+    "selectReport": "Select a report to view",
+    "empty": {
+      "title": "No reports generated yet",
+      "description": "Create your first report, then return here to browse historical HTML reports.",
+      "stepInsights": "1) In Claude Code, run /insights (or npx cit insights if configured).",
+      "stepCollect": "2) In your terminal, run: npx cit collect --all",
+      "stepProfile": "3) Optional: run npx cit profile to generate a coding profile summary",
+      "outputReport": "Reports appear in: <baseDir>/reports/report-YYYY-MM-DD.html",
+      "outputProfile": "Profile command output appears in your terminal, or in the file passed via --save"
+    }
   },
   "helpfulness": {
     "very_helpful": "Very Helpful",
@@ -248,6 +271,15 @@
     "subtitle": "{{start}} to {{end}}",
     "noReport": "No report.html found",
     "runInsights": "Run /insights in Claude Code, then cit collect",
+    "empty": {
+      "title": "No profile data yet",
+      "description": "Profile data is generated from the latest report. Run the steps below, then refresh this page.",
+      "stepInsights": "1) In Claude Code, run /insights (or npx cit insights if configured).",
+      "stepCollect": "2) In your terminal, run: npx cit collect --all",
+      "stepProfile": "3) Optional: run npx cit profile to preview the same profile in CLI",
+      "outputReport": "Source report path: <baseDir>/reports/report-YYYY-MM-DD.html",
+      "outputProfile": "Web profile is available at /profile after collect; CLI profile prints to terminal or --save file"
+    },
     "messages": "Messages",
     "sessions": "Sessions",
     "activeDays": "Active Days",

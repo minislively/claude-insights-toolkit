@@ -72,6 +72,19 @@
     "topCategories": "상위 목표 카테고리",
     "allPeriodFallback": "전체 기간 선택 시, 개요 KPI는 최근 30일로 계산됩니다.",
     "efficiencySummary": "효율 요약",
+    "nextActions": "다음 액션",
+    "nextActionItems": {
+      "reduceApiErrors": "API 오류 세션 비율 낮추기",
+      "keepApiErrorsLow": "API 오류 세션 비율 유지",
+      "improveSuccessRate": "성공 결과 비율 높이기",
+      "maintainSuccessRate": "현재 성공률 유지",
+      "reduceRefinementLoops": "반복 개선 루프 줄이기",
+      "keepRefinementStable": "반복 개선 안정적으로 유지",
+      "preventContextOverflow": "컨텍스트 초과 재작업 줄이기",
+      "keepContextHealthy": "컨텍스트 사용량 안정 유지",
+      "controlCost": "예상 비용 관리",
+      "keepCostEfficient": "비용 효율 유지"
+    },
     "avg": "평균",
     "median": "중앙값",
     "p90": "P90"
@@ -83,7 +96,8 @@
     "helpfulness": "유용성",
     "friction": "마찰",
     "summary": "요약",
-    "frictionDetail": "마찰 상세"
+    "frictionDetail": "마찰 상세",
+    "unknownHelpfulness": "알 수 없음"
   },
   "bottlenecks": {
     "title": "병목점",
@@ -186,7 +200,16 @@
     "subtitle": "공식 Claude Code 인사이트",
     "noReports": "리포트가 없습니다. cit collect 명령으로 리포트를 생성하세요.",
     "loadingReport": "리포트 로딩 중...",
-    "selectReport": "보려는 리포트를 선택하세요"
+    "selectReport": "보려는 리포트를 선택하세요",
+    "empty": {
+      "title": "아직 생성된 리포트가 없습니다",
+      "description": "첫 리포트를 생성한 뒤, 여기에서 과거 HTML 리포트를 확인할 수 있습니다.",
+      "stepInsights": "1) Claude Code에서 /insights 를 실행하세요 (설정되어 있다면 npx cit insights 도 가능).",
+      "stepCollect": "2) 터미널에서 실행: npx cit collect --all",
+      "stepProfile": "3) (선택) npx cit profile 로 CLI에서 프로필을 미리 확인하세요",
+      "outputReport": "리포트 저장 위치: <baseDir>/reports/report-YYYY-MM-DD.html",
+      "outputProfile": "프로필 출력은 터미널에 표시되며, --save 옵션으로 파일에 저장할 수 있습니다"
+    }
   },
   "helpfulness": {
     "very_helpful": "매우 유용",
@@ -248,6 +271,15 @@
     "subtitle": "{{start}} ~ {{end}}",
     "noReport": "report.html을 찾을 수 없습니다",
     "runInsights": "Claude Code에서 /insights 실행 후 cit collect을 실행하세요",
+    "empty": {
+      "title": "아직 프로필 데이터가 없습니다",
+      "description": "프로필 데이터는 최신 report.html에서 생성됩니다. 아래 단계를 실행한 뒤 새로고침하세요.",
+      "stepInsights": "1) Claude Code에서 /insights 를 실행하세요 (설정되어 있다면 npx cit insights 도 가능).",
+      "stepCollect": "2) 터미널에서 실행: npx cit collect --all",
+      "stepProfile": "3) (선택) npx cit profile 로 동일한 프로필을 CLI에서 확인하세요",
+      "outputReport": "원본 리포트 경로: <baseDir>/reports/report-YYYY-MM-DD.html",
+      "outputProfile": "웹 프로필은 collect 이후 /profile 에서 확인 가능; CLI 프로필은 터미널 출력 또는 --save 파일"
+    },
     "messages": "메시지",
     "sessions": "세션",
     "activeDays": "활동 일수",

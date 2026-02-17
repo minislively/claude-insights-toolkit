@@ -147,6 +147,15 @@ function SessionRow({ session: s }: { session: ISessionFacet }) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const frictionList = Object.entries(s.friction_counts).filter(([_, v]) => v > 0)
+  const topFrictionTypes = [...frictionList]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([key]) => key.replace(/_/g, ' '))
+  const extraFrictionCount = Math.max(0, frictionList.length - 2)
+  const frictionSummary = frictionList.length > 0
+    ? `${topFrictionTypes.join(', ')}${extraFrictionCount > 0 ? ` +${extraFrictionCount} more` : ''}`
+    : '-'
+  const helpfulnessLabel = t(`helpfulness.${s.claude_helpfulness}`, { defaultValue: t('sessions.unknownHelpfulness') })
 
   const outcomeStyles: Record<string, string> = {
     fully_achieved: 'bg-emerald-500/20 text-emerald-400',
@@ -167,8 +176,8 @@ function SessionRow({ session: s }: { session: ISessionFacet }) {
           </span>
         </td>
         <td className="py-3 px-4 text-slate-400 text-xs">{s.session_type.replace(/_/g, ' ')}</td>
-        <td className="py-3 px-4 text-slate-400 text-xs">{t(`helpfulness.${s.claude_helpfulness}`)}</td>
-        <td className="py-3 px-4 text-slate-400 text-xs">{frictionList.length > 0 ? frictionList.length + ' types' : '-'}</td>
+        <td className="py-3 px-4 text-slate-400 text-xs">{helpfulnessLabel}</td>
+        <td className="py-3 px-4 text-slate-400 text-xs">{frictionSummary}</td>
       </tr>
       {expanded && (
         <tr className="bg-slate-700/20">
